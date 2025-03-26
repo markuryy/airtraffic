@@ -533,9 +533,10 @@ const AirTrafficRadar: React.FC<AirTrafficRadarProps> = ({ width, height }) => {
           width: '100%',
           height: '100%',
           display: 'block',
+          fontFamily: 'monospace'
         }}
       />
-      <div className="absolute bottom-4 right-4 text-gray-500 text-sm font-mono">
+      <div className="absolute bottom-4 right-4 text-[#404040] text-sm font-mono tracking-wide">
         <div className="bg-black bg-opacity-50 p-3 rounded-lg space-y-1">
           <p>Click - Set target</p>
           <p>L - [L]anding</p>
