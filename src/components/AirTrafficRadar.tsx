@@ -526,14 +526,27 @@ const AirTrafficRadar: React.FC<AirTrafficRadarProps> = ({ width, height }) => {
   }, [width, height, aircraft, showTerrain]); // showTerrain controls both terrain and obstructions
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'block',
-      }}
-    />
+    <div className="relative w-full h-full">
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+        }}
+      />
+      <div className="absolute bottom-4 right-4 text-gray-500 text-sm font-mono">
+        <div className="bg-black bg-opacity-50 p-3 rounded-lg space-y-1">
+          <p>Click - Set target</p>
+          <p>L - [L]anding</p>
+          <p>R - [R]otate 180°</p>
+          <p>C - [C]limb 1000ft</p>
+          <p>D - [D]escend 1000ft</p>
+          <p>E - Toggle t[E]rrain</p>
+          <p>S - Toggle [S]tate</p>
+        </div>
+      </div>
+    </div>
   );
 };
 
