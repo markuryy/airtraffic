@@ -1,0 +1,59 @@
+{
+  "airports": {
+    "KBUF": {
+      "elevation": 728,
+      "name": "Buffalo Niagara International Airport"
+    },
+    "KIAG": {
+      "elevation": 589,
+      "name": "Niagara Falls International Airport"
+    }
+  },
+  "terrain_grid": [
+    {
+      "lat": 42.931200,
+      "lon": -78.741685,
+      "elevation": 728
+    },
+    {
+      "lat": 43.107333,
+      "lon": -78.946389,
+      "elevation": 589
+    },
+    {
+      "lat": 42.950000,
+      "lon": -78.750000,
+      "elevation": 710
+    },
+    {
+      "lat": 42.920000,
+      "lon": -78.740000,
+      "elevation": 700
+    },
+    {
+      "lat": 42.930000,
+      "lon": -78.760000,
+      "elevation": 715
+    },
+    {
+      "lat": 42.930000,
+      "lon": -78.720000,
+      "elevation": 705
+    },
+    {
+      "lat": 43.100000,
+      "lon": -78.950000,
+      "elevation": 580
+    },
+    {
+      "lat": 43.110000,
+      "lon": -78.940000,
+      "elevation": 575
+    },
+    {
+      "lat": 43.000000,
+      "lon": -78.850000,
+      "elevation": 650
+    }
+  ]
+} 

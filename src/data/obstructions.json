@@ -1,0 +1,24 @@
+{
+  "obstructions": [
+    {
+      "type": "TOWER",
+      "lat": 42.931200,
+      "lon": -78.491685,
+      "height": 1200,
+      "elevation": 705,
+      "totalHeight": 1905,
+      "lighting": "STROBE",
+      "description": "Communications Tower"
+    },
+    {
+      "type": "WIND_TURBINE",
+      "lat": 42.950000,
+      "lon": -78.491685,
+      "height": 400,
+      "elevation": 710,
+      "totalHeight": 1110,
+      "lighting": "RED",
+      "description": "Wind Farm Alpha"
+    }
+  ]
+} 
