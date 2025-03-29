@@ -334,6 +334,7 @@ export default function DataViewerPage() {
                     <TableCell>Type</TableCell>
                     <TableCell>Description</TableCell>
                     <TableCell align="right">Cruise Speed (kt)</TableCell>
+                    <TableCell align="right">Fuel Burn (gal/hr)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -342,6 +343,7 @@ export default function DataViewerPage() {
                       <TableCell>{aircraft.id}</TableCell>
                       <TableCell>{aircraft.label}</TableCell>
                       <TableCell align="right">{aircraft.cruiseSpeed}</TableCell>
+                      <TableCell align="right">{aircraft.fuelBurn.toFixed(1)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

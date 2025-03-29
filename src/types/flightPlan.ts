@@ -2,6 +2,7 @@ export interface AircraftType {
   id: string;
   label: string;
   cruiseSpeed: number;
+  fuelBurn: number;  // Gallons per hour at cruise power
 }
 
 export interface Airport {

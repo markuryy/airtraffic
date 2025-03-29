@@ -27,7 +27,7 @@ import {
 } from '@mui/icons-material';
 import aircraftTypes from '@/data/aircraft-types.json';
 import airportList from '@/data/airport-list.json';
-import { validateFlightPlan, submitFlightPlan } from '@/lib/flightPlanValidation';
+import { validateFlightPlan, submitFlightPlan, calculateFuelRequired } from '@/lib/flightPlanValidation';
 import { ValidationError, StoredFlightPlan, Airport, AircraftType } from '@/types/flightPlan';
 import { saveFlightPlan } from '@/lib/flightPlanStorage';
 import AltitudeProfile from '@/components/AltitudeProfile';
@@ -55,6 +55,14 @@ export default function FlightPlannerPage() {
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<StoredFlightPlan | null>(null);
 
+  const [fuelCalculation, setFuelCalculation] = useState<{
+    totalFuel: number;
+    climbFuel: number;
+    cruiseFuel: number;
+    descentFuel: number;
+    reserveFuel: number;
+  }>({ totalFuel: 0, climbFuel: 0, cruiseFuel: 0, descentFuel: 0, reserveFuel: 0 });
+
   // Set initial ETD to current Zulu time
   useEffect(() => {
     const now = new Date();
@@ -70,6 +78,14 @@ export default function FlightPlannerPage() {
       etdDate: dateString
     }));
   }, []);
+
+  // Update fuel calculations whenever relevant fields change
+  useEffect(() => {
+    if (formData.aircraft && formData.departure && formData.destination) {
+      const fuelReq = calculateFuelRequired(formData);
+      setFuelCalculation(fuelReq);
+    }
+  }, [formData.aircraft, formData.departure, formData.destination, formData.altitude, formData.speed]);
 
   const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [field]: event.target.value });
@@ -330,8 +346,20 @@ export default function FlightPlannerPage() {
                 sx={{ width: 100 }}
                 size="small"
                 InputProps={{
-                  endAdornment: <InputAdornment position="end">gal</InputAdornment>,
+                  endAdornment: (
+                    <Tooltip title={`Required fuel breakdown:
+• Climb: ${fuelCalculation.climbFuel.toFixed(1)} gal
+• Cruise: ${fuelCalculation.cruiseFuel.toFixed(1)} gal
+• Descent: ${fuelCalculation.descentFuel.toFixed(1)} gal
+• Reserve: ${fuelCalculation.reserveFuel.toFixed(1)} gal
+Total: ${fuelCalculation.totalFuel.toFixed(1)} gal`}>
+                      <InputAdornment position="end">gal</InputAdornment>
+                    </Tooltip>
+                  ),
                 }}
+                error={formData.fuel !== '' && parseFloat(formData.fuel) < fuelCalculation.totalFuel}
+                helperText={formData.fuel !== '' && parseFloat(formData.fuel) < fuelCalculation.totalFuel ? 
+                  `Minimum ${fuelCalculation.totalFuel.toFixed(1)} gal required` : ''}
               />
             </Box>
 

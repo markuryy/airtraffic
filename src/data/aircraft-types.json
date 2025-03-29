@@ -1,15 +1,15 @@
 {
   "types": [
-    { "id": "C172", "label": "Cessna 172", "cruiseSpeed": 122 },
-    { "id": "PA28", "label": "Piper Cherokee", "cruiseSpeed": 130 },
-    { "id": "C182", "label": "Cessna 182", "cruiseSpeed": 145 },
-    { "id": "BE36", "label": "Beechcraft Bonanza", "cruiseSpeed": 165 },
-    { "id": "PA32", "label": "Piper Saratoga", "cruiseSpeed": 155 },
-    { "id": "C210", "label": "Cessna 210", "cruiseSpeed": 170 },
-    { "id": "SR22", "label": "Cirrus SR22", "cruiseSpeed": 180 },
-    { "id": "DA40", "label": "Diamond DA40", "cruiseSpeed": 150 },
-    { "id": "M20J", "label": "Mooney M20J", "cruiseSpeed": 175 },
-    { "id": "PA44", "label": "Piper Seminole", "cruiseSpeed": 155 },
-    { "id": "F22", "label": "F-22 Raptor", "cruiseSpeed": 1000 }
+    { "id": "C172", "label": "Cessna 172", "cruiseSpeed": 122, "fuelBurn": 8.5 },
+    { "id": "PA28", "label": "Piper Cherokee", "cruiseSpeed": 130, "fuelBurn": 9.0 },
+    { "id": "C182", "label": "Cessna 182", "cruiseSpeed": 145, "fuelBurn": 12.0 },
+    { "id": "BE36", "label": "Beechcraft Bonanza", "cruiseSpeed": 165, "fuelBurn": 13.5 },
+    { "id": "PA32", "label": "Piper Saratoga", "cruiseSpeed": 155, "fuelBurn": 14.0 },
+    { "id": "C210", "label": "Cessna 210", "cruiseSpeed": 170, "fuelBurn": 14.5 },
+    { "id": "SR22", "label": "Cirrus SR22", "cruiseSpeed": 180, "fuelBurn": 15.0 },
+    { "id": "DA40", "label": "Diamond DA40", "cruiseSpeed": 150, "fuelBurn": 8.0 },
+    { "id": "M20J", "label": "Mooney M20J", "cruiseSpeed": 175, "fuelBurn": 10.0 },
+    { "id": "PA44", "label": "Piper Seminole", "cruiseSpeed": 155, "fuelBurn": 16.0 },
+    { "id": "F22", "label": "F-22 Raptor", "cruiseSpeed": 1000, "fuelBurn": 2000.0 }
   ]
 } 
