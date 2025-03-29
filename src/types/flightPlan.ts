@@ -3,6 +3,7 @@ export interface AircraftType {
   label: string;
   cruiseSpeed: number;
   fuelBurn: number;  // Gallons per hour at cruise power
+  maxFuel: number;   // Maximum fuel capacity in gallons
 }
 
 export interface Airport {

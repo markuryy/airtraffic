@@ -361,6 +361,18 @@ Total: ${fuelCalculation.totalFuel.toFixed(1)} gal`}>
                 helperText={formData.fuel !== '' && parseFloat(formData.fuel) < fuelCalculation.totalFuel ? 
                   `Minimum ${fuelCalculation.totalFuel.toFixed(1)} gal required` : ''}
               />
+              {formData.aircraft && (
+                <Tooltip title={`Fill to maximum capacity (${formData.aircraft.maxFuel} gal)`}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setFormData(prev => ({ ...prev, fuel: formData.aircraft!.maxFuel.toString() }))}
+                    sx={{ ml: 1, height: 40 }}
+                  >
+                    Fill Max
+                  </Button>
+                </Tooltip>
+              )}
             </Box>
 
             {/* Route */}
