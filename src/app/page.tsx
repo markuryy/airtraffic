@@ -48,6 +48,126 @@ export default function Home() {
               </div>
             </div>
           </Link>
+
+          <Link 
+            href="/flight-planner"
+            className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Flight Plan</h2>
+            <div className="text-gray-600 space-y-4">
+              <p className="mb-3">
+                Create and validate new flight plans before submission to the central processing system. 
+                Ensures all flight details meet requirements and airspace constraints before being sent 
+                to IFPS for approval.
+              </p>
+
+              <div>
+                <h3 className="text-gray-800 font-medium mb-2">Key Features</h3>
+                <div className="text-sm space-y-2">
+                  <p>• Flight plan creation and validation</p>
+                  <p>• Aircraft performance checks</p>
+                  <p>• Route verification</p>
+                  <p>• Direct submission to IFPS</p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                  Open Flight Planner →
+                </button>
+              </div>
+            </div>
+          </Link>
+
+          <Link 
+            href="/ifps"
+            className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Initial Flight Plan Processing System</h2>
+            <div className="text-gray-600 space-y-4">
+              <p className="mb-3">
+                The central hub where submitted flight plans await approval. Acts as a gatekeeper between 
+                flight plan submission and operations, ensuring only approved plans can proceed to active 
+                flight status.
+              </p>
+              
+              <div>
+                <h3 className="text-gray-800 font-medium mb-2">Key Features</h3>
+                <div className="text-sm space-y-2">
+                  <p>• Flight plan review and approval</p>
+                  <p>• Integration with Flight Planner</p>
+                  <p>• Forwards approved plans to Operations</p>
+                  <p>• Flight strip generation</p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                  Open IFPS →
+                </button>
+              </div>
+            </div>
+          </Link>
+
+          <Link 
+            href="/operations"
+            className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Flight Operations Center</h2>
+            <div className="text-gray-600 space-y-4">
+              <p className="mb-3">
+                The final stage where approved flight plans become active flights. Manages the dispatch 
+                and monitoring of aircraft, tracking their progress from takeoff to landing using the 
+                radar system.
+              </p>
+              
+              <div>
+                <h3 className="text-gray-800 font-medium mb-2">Key Features</h3>
+                <div className="text-sm space-y-2">
+                  <p>• Flight activation and dispatch</p>
+                  <p>• Real-time radar tracking</p>
+                  <p>• Flight progress monitoring</p>
+                  <p>• Completion processing</p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                  Launch Operations Center →
+                </button>
+              </div>
+            </div>
+          </Link>
+
+          <Link 
+            href="/data"
+            className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Viewer</h2>
+            <div className="text-gray-600 space-y-4">
+              <p className="mb-3">
+                Reference tool providing access to all underlying system data. Used by Flight Planner for 
+                route creation, IFPS for plan validation, and Operations for tracking constraints and 
+                requirements.
+              </p>
+              
+              <div>
+                <h3 className="text-gray-800 font-medium mb-2">Available Data</h3>
+                <div className="text-sm space-y-2">
+                  <p>• Aircraft performance specifications</p>
+                  <p>• Airport and runway information</p>
+                  <p>• Terrain and obstruction data</p>
+                  <p>• System-wide reference data</p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                  Open Data Viewer →
+                </button>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </main>

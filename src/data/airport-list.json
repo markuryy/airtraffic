@@ -1,0 +1,14 @@
+{
+  "airports": [
+    { "id": "KBUF", "label": "Buffalo Niagara Intl (KBUF)", "name": "Buffalo Niagara International", "lat": 42.931200, "lon": -78.741685 },
+    { "id": "KIAG", "label": "Niagara Falls Intl (KIAG)", "name": "Niagara Falls International", "lat": 43.107333, "lon": -78.946389 },
+    { "id": "KROC", "label": "Rochester Intl (KROC)", "name": "Rochester International", "lat": 43.118866, "lon": -77.672389 },
+    { "id": "KSYR", "label": "Syracuse Intl (KSYR)", "name": "Syracuse International", "lat": 43.111187, "lon": -76.106311 },
+    { "id": "KITH", "label": "Ithaca Tompkins Intl (KITH)", "name": "Ithaca Tompkins International", "lat": 42.491028, "lon": -76.458444 },
+    { "id": "KFZY", "label": "Oswego County (KFZY)", "name": "Oswego County", "lat": 43.351389, "lon": -76.388333 },
+    { "id": "KELM", "label": "Elmira/Corning Regional (KELM)", "name": "Elmira/Corning Regional", "lat": 42.159889, "lon": -76.891611 },
+    { "id": "KGVQ", "label": "Genesee County (KGVQ)", "name": "Genesee County", "lat": 43.031944, "lon": -78.169722 },
+    { "id": "KPEO", "label": "Penn Yan (KPEO)", "name": "Penn Yan", "lat": 42.635556, "lon": -77.053056 },
+    { "id": "KDDH", "label": "William H. Morse State (KDDH)", "name": "William H. Morse State", "lat": 42.898333, "lon": -73.246944 }
+  ]
+} 
