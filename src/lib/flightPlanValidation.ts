@@ -158,6 +158,23 @@ export async function validateFlightPlan(plan: FlightPlan): Promise<ValidationEr
   const speed = parseInt(plan.speed);
   if (isNaN(speed) || speed <= 0) {
     errors.push({ field: 'speed', message: 'Valid speed is required' });
+  } else {
+    // Check for supersonic flight (Mach 1 ≈ 661 knots at sea level)
+    if (speed > 660) {
+      errors.push({ 
+        field: 'speed', 
+        message: 'Supersonic flight is not permitted in civilian airspace'
+      });
+    }
+
+    // Check for speed restrictions below 10,000 feet
+    const altitude = parseInt(plan.altitude) * 100;
+    if (altitude < 10000 && speed > 250) {
+      errors.push({ 
+        field: 'speed', 
+        message: 'Maximum speed below 10,000 feet is 250 knots'
+      });
+    }
   }
 
   // Altitude validation

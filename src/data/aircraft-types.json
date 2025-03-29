@@ -10,6 +10,6 @@
     { "id": "DA40", "label": "Diamond DA40", "cruiseSpeed": 150, "fuelBurn": 8.0, "maxFuel": 50 },
     { "id": "M20J", "label": "Mooney M20J", "cruiseSpeed": 175, "fuelBurn": 10.0, "maxFuel": 64 },
     { "id": "PA44", "label": "Piper Seminole", "cruiseSpeed": 155, "fuelBurn": 16.0, "maxFuel": 108 },
-    { "id": "F22", "label": "F-22 Raptor", "cruiseSpeed": 1000, "fuelBurn": 2000.0, "maxFuel": 18000 }
+    { "id": "F22", "label": "F-22 Raptor", "cruiseSpeed": 1000, "fuelBurn": 2000.0, "maxFuel": 2571 }
   ]
 } 

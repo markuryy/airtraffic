@@ -168,6 +168,35 @@ export default function Home() {
               </div>
             </div>
           </Link>
+
+          <Link 
+            href="/military-ops"
+            className="block p-6 bg-gray-900 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h2 className="text-2xl font-semibold text-red-500 mb-4">Military Operations Center</h2>
+            <div className="text-gray-400 space-y-4">
+              <p className="mb-3">
+                Secure military operations center for managing F-22 Raptor intercepts of civilian aircraft.
+                Provides real-time tracking and dispatch capabilities for rapid response scenarios.
+              </p>
+              
+              <div>
+                <h3 className="text-red-400 font-medium mb-2">Capabilities</h3>
+                <div className="text-sm space-y-2">
+                  <p>• F-22 Raptor dispatch system</p>
+                  <p>• Real-time intercept tracking</p>
+                  <p>• Maximum performance flight profiles</p>
+                  <p>• Combat Air Patrol management</p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-700">
+                <button className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                  Access Military Ops →
+                </button>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </main>

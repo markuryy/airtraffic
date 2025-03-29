@@ -3,15 +3,15 @@ import { FlightPlan, StoredFlightPlan } from '@/types/flightPlan';
 const STORAGE_KEY = 'flightPlans';
 
 export function saveFlightPlan(plan: FlightPlan): StoredFlightPlan {
-  // Generate a unique ID (timestamp + random string)
-  const id = `FP${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
+  // Use existing ID if present (e.g., for intercept flights) or generate a new one
+  const id = (plan as StoredFlightPlan).id || `FP${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
   
   // Create the stored plan object
   const storedPlan: StoredFlightPlan = {
     ...plan,
     id,
     submittedAt: new Date().toISOString(),
-    status: 'PENDING'
+    status: (plan as StoredFlightPlan).status || 'PENDING'  // Use provided status or default to PENDING
   };
 
   // Get existing plans
