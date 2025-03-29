@@ -1,4 +1,96 @@
 import { FlightPlan, ValidationError } from '@/types/flightPlan';
+import * as turf from '@turf/turf';
+import { Units } from '@turf/helpers';
+
+// Standard climb/descent rates in feet per minute
+const STANDARD_CLIMB_RATE = 500;
+const STANDARD_DESCENT_RATE = 800;
+const MIN_CRUISE_DISTANCE = 5; // Reduced from 10 to 5nm for short flights
+const MIN_FLIGHT_ALTITUDE = 500; // Minimum altitude in feet for any flight
+
+function validateCruiseAltitude(plan: FlightPlan): ValidationError | null {
+  if (!plan.departure || !plan.destination || !plan.aircraft) return null;
+
+  // Calculate distance between airports
+  const from = turf.point([plan.departure.lon, plan.departure.lat]);
+  const to = turf.point([plan.destination.lon, plan.destination.lat]);
+  const distance = turf.distance(from, to, { units: 'nauticalmiles' as Units });
+
+  // For very short flights (under 10nm), suggest pattern altitude
+  if (distance < 10) {
+    const requestedAlt = parseInt(plan.altitude) * 100;
+    if (requestedAlt > 2500) {
+      return {
+        field: 'altitude',
+        message: `For a ${Math.round(distance)}nm flight, recommend staying at or below 2,500ft. ` +
+                 `Enter '025' for 2,500ft.`
+      };
+    }
+    // If altitude is reasonable for short flight, allow it
+    if (requestedAlt >= MIN_FLIGHT_ALTITUDE) {
+      return null;
+    }
+  }
+
+  // Calculate time to climb/descend to/from cruise altitude
+  const cruiseAltitude = parseInt(plan.altitude) * 100; // Convert FL to feet
+  const timeToClimb = cruiseAltitude / STANDARD_CLIMB_RATE; // minutes
+  const timeToDescend = cruiseAltitude / STANDARD_DESCENT_RATE; // minutes
+
+  // Calculate distance covered during climb and descent
+  const climbSpeed = Math.min(plan.aircraft.cruiseSpeed * 0.7, 120); // Reduced speed during climb
+  const descentSpeed = Math.min(plan.aircraft.cruiseSpeed * 0.8, 140); // Reduced speed during descent
+  const climbDistance = (climbSpeed / 60) * timeToClimb; // nm
+  const descentDistance = (descentSpeed / 60) * timeToDescend; // nm
+
+  // Calculate remaining distance at cruise altitude
+  const cruiseDistance = distance - (climbDistance + descentDistance);
+
+  // Minimum distance needed for climb/descent profile
+  const minRequiredDistance = climbDistance + descentDistance;
+
+  // For medium distance flights (10-30nm), suggest appropriate altitude range
+  if (distance < 30) {
+    const maxRecommendedAlt = Math.min(5000, Math.floor(distance * 150));
+    if (cruiseAltitude > maxRecommendedAlt) {
+      return {
+        field: 'altitude',
+        message: `For a ${Math.round(distance)}nm flight, recommend staying at or below ${maxRecommendedAlt.toLocaleString()}ft. ` +
+                 `Enter '${String(maxRecommendedAlt / 100).padStart(3, '0')}' for ${maxRecommendedAlt.toLocaleString()}ft.`
+      };
+    }
+    return null;
+  }
+
+  // Validate if distance is sufficient for cruise altitude
+  if (distance < minRequiredDistance) {
+    const maxAlt = Math.floor((distance * STANDARD_CLIMB_RATE * 30) / climbSpeed / 100) * 100;
+    return {
+      field: 'altitude',
+      message: `For a ${Math.round(distance)}nm flight, recommend staying at or below ${maxAlt.toLocaleString()}ft. ` +
+               `Enter '${String(maxAlt / 100).padStart(3, '0')}' for ${maxAlt.toLocaleString()}ft.`
+    };
+  }
+
+  // If cruise segment is too short, suggest a lower altitude
+  if (cruiseDistance < MIN_CRUISE_DISTANCE) {
+    // Calculate maximum reasonable altitude for this distance
+    const maxAltitude = Math.floor(
+      Math.min(
+        (distance - MIN_CRUISE_DISTANCE) * 150,
+        (distance * STANDARD_CLIMB_RATE * 30) / climbSpeed
+      ) / 100
+    ) * 100;
+    
+    return {
+      field: 'altitude',
+      message: `For a ${Math.round(distance)}nm flight, recommend staying at or below ${maxAltitude.toLocaleString()}ft. ` +
+               `Enter '${String(maxAltitude / 100).padStart(3, '0')}' for ${maxAltitude.toLocaleString()}ft.`
+    };
+  }
+
+  return null;
+}
 
 export async function validateFlightPlan(plan: FlightPlan): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
@@ -16,8 +108,14 @@ export async function validateFlightPlan(plan: FlightPlan): Promise<ValidationEr
 
   // Altitude validation
   const altitude = parseInt(plan.altitude) * 100;
-  if (isNaN(altitude) || altitude < 1000) {
-    errors.push({ field: 'altitude', message: 'Valid altitude is required (minimum 1000ft)' });
+  if (isNaN(altitude)) {
+    errors.push({ field: 'altitude', message: 'Valid altitude is required' });
+  }
+
+  // Cruise altitude validation
+  const cruiseAltitudeError = validateCruiseAltitude(plan);
+  if (cruiseAltitudeError) {
+    errors.push(cruiseAltitudeError);
   }
 
   // Fuel validation

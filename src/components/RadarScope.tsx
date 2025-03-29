@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StoredFlightPlan } from '@/types/flightPlan';
 import airportList from '@/data/airport-list.json';
+import coastline from '@/data/coastline.json';
 
 interface Position {
   lat: number;
@@ -223,6 +224,31 @@ export default function RadarScope({ activeFlights, width = 800, height = 800 }:
     ctx.restore();
   };
 
+  const drawCoastline = (ctx: CanvasRenderingContext2D) => {
+    ctx.save();
+    ctx.strokeStyle = '#444444';
+    ctx.lineWidth = 1;
+
+    coastline.features.forEach(feature => {
+      if (feature.geometry.type === 'LineString') {
+        const coords = feature.geometry.coordinates;
+        
+        ctx.beginPath();
+        const [startX, startY] = geoToCanvas(coords[0][0], coords[0][1]);
+        ctx.moveTo(startX, startY);
+        
+        for (let i = 1; i < coords.length; i++) {
+          const [x, y] = geoToCanvas(coords[i][0], coords[i][1]);
+          ctx.lineTo(x, y);
+        }
+        
+        ctx.stroke();
+      }
+    });
+
+    ctx.restore();
+  };
+
   const drawRadarScope = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -242,6 +268,9 @@ export default function RadarScope({ activeFlights, width = 800, height = 800 }:
       ctx.arc(width / 2, height / 2, (Math.min(width, height) / 5) * i, 0, Math.PI * 2);
       ctx.stroke();
     }
+    
+    // Draw coastline
+    drawCoastline(ctx);
     
     // Draw airports
     airportList.airports.forEach(airport => {

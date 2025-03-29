@@ -30,6 +30,7 @@ import airportList from '@/data/airport-list.json';
 import { validateFlightPlan, submitFlightPlan } from '@/lib/flightPlanValidation';
 import { ValidationError, StoredFlightPlan, Airport, AircraftType } from '@/types/flightPlan';
 import { saveFlightPlan } from '@/lib/flightPlanStorage';
+import AltitudeProfile from '@/components/AltitudeProfile';
 
 export default function FlightPlannerPage() {
   const [formData, setFormData] = useState({
@@ -492,6 +493,21 @@ export default function FlightPlannerPage() {
                 </Button>
               </Box>
             </Box>
+
+            {/* Altitude Profile */}
+            {formData.departure && formData.destination && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Altitude Profile
+                </Typography>
+                <AltitudeProfile
+                  departure={formData.departure}
+                  destination={formData.destination}
+                  altitude={formData.altitude}
+                  aircraftSpeed={parseInt(formData.speed)}
+                />
+              </Box>
+            )}
 
             {/* Validation Status */}
             {hasAttemptedSubmit && !validationSuccess && !validationErrors.length && (
