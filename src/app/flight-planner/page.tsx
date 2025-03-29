@@ -28,20 +28,8 @@ import {
 import aircraftTypes from '@/data/aircraft-types.json';
 import airportList from '@/data/airport-list.json';
 import { validateFlightPlan, submitFlightPlan } from '@/lib/flightPlanValidation';
-import { ValidationError } from '@/types/flightPlan';
-import { saveFlightPlan, StoredFlightPlan } from '@/lib/flightPlanStorage';
-
-interface AircraftType {
-  id: string;
-  label: string;
-  cruiseSpeed: number;
-}
-
-interface Airport {
-  id: string;
-  label: string;
-  name: string;
-}
+import { ValidationError, StoredFlightPlan, Airport, AircraftType } from '@/types/flightPlan';
+import { saveFlightPlan } from '@/lib/flightPlanStorage';
 
 export default function FlightPlannerPage() {
   const [formData, setFormData] = useState({
