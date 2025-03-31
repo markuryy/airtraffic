@@ -147,6 +147,9 @@ function TerrainVisualization() {
     // Initial dimensions calculation
     updateDimensions();
     
+    // Capture the current container reference
+    const container = containerRef.current;
+    
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000033);
@@ -159,7 +162,7 @@ function TerrainVisualization() {
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(dimensions.width, dimensions.height);
-    containerRef.current.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 
     // Add OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -186,13 +189,13 @@ function TerrainVisualization() {
     helpText.innerHTML = 'Left click: rotate | Right click: pan | Scroll: zoom';
     helpText.style.opacity = '0';
     helpText.style.transition = 'opacity 0.3s';
-    containerRef.current.appendChild(helpText);
+    container.appendChild(helpText);
     
-    containerRef.current.addEventListener('mouseenter', () => {
+    container.addEventListener('mouseenter', () => {
       helpText.style.opacity = '1';
     });
     
-    containerRef.current.addEventListener('mouseleave', () => {
+    container.addEventListener('mouseleave', () => {
       helpText.style.opacity = '0';
     });
 
@@ -285,7 +288,7 @@ function TerrainVisualization() {
     const handleResize = () => {
       updateDimensions();
       
-      if (containerRef.current) {
+      if (container) {
         camera.aspect = dimensions.width / dimensions.height;
         camera.updateProjectionMatrix();
         renderer.setSize(dimensions.width, dimensions.height);
@@ -295,9 +298,9 @@ function TerrainVisualization() {
     window.addEventListener('resize', handleResize);
 
     return () => {
-      if (containerRef.current) {
-        while (containerRef.current.firstChild) {
-          containerRef.current.removeChild(containerRef.current.firstChild);
+      if (container) {
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
         }
       }
       window.removeEventListener('resize', handleResize);
