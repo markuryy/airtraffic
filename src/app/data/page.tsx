@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import aircraftTypes from '@/data/aircraft-types.json';
-import airportList from '@/data/airport-list.json';
 import airports from '@/data/airports.json';
 import obstructions from '@/data/obstructions.json';
 import terrain from '@/data/terrain.json';
@@ -127,25 +127,74 @@ function CoastlineVisualization() {
 
 function TerrainVisualization() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const width = 400;
-  const height = 300;
+  const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
+  const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
   
   useEffect(() => {
     if (!containerRef.current) return;
-
+    
+    // Get container dimensions
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        setDimensions({
+          width: containerWidth - 20, // account for padding
+          height: Math.min(500, containerWidth * 0.5), // responsive height
+        });
+      }
+    };
+    
+    // Initial dimensions calculation
+    updateDimensions();
+    
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000033);
     
     // Camera setup
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, dimensions.width / dimensions.height, 0.1, 1000);
     camera.position.set(5, 5, 5);
     camera.lookAt(0, 0, 0);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
+    renderer.setSize(dimensions.width, dimensions.height);
     containerRef.current.appendChild(renderer.domElement);
+
+    // Add OrbitControls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.8;
+    controls.maxDistance = 20;
+    controls.minDistance = 2;
+    controls.autoRotate = isAutoRotating;
+    controls.autoRotateSpeed = 1.0;
+
+    // Display a help message on hover
+    const helpText = document.createElement('div');
+    helpText.style.position = 'absolute';
+    helpText.style.bottom = '10px';
+    helpText.style.left = '10px';
+    helpText.style.color = 'white';
+    helpText.style.fontSize = '12px';
+    helpText.style.pointerEvents = 'none';
+    helpText.style.userSelect = 'none';
+    helpText.style.padding = '4px 8px';
+    helpText.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    helpText.style.borderRadius = '4px';
+    helpText.innerHTML = 'Left click: rotate | Right click: pan | Scroll: zoom';
+    helpText.style.opacity = '0';
+    helpText.style.transition = 'opacity 0.3s';
+    containerRef.current.appendChild(helpText);
+    
+    containerRef.current.addEventListener('mouseenter', () => {
+      helpText.style.opacity = '1';
+    });
+    
+    containerRef.current.addEventListener('mouseleave', () => {
+      helpText.style.opacity = '0';
+    });
 
     // Grid helper
     const gridHelper = new THREE.GridHelper(10, 10, 0x00ff00, 0x00ff00);
@@ -204,41 +253,74 @@ function TerrainVisualization() {
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
+    // Add axes helper (x=red, y=green, z=blue)
+    const axesHelper = new THREE.AxesHelper(3);
+    scene.add(axesHelper);
+
+    // Add a subtle point light at origin for extra glow effect
+    const pointLight = new THREE.PointLight(0x00ffff, 0.6, 10);
+    pointLight.position.set(0, 0, 0);
+    scene.add(pointLight);
+
     // Animation
     let frame = 0;
     const animate = () => {
       frame += 0.005;
       
-      // Rotate camera around the scene
-      camera.position.x = Math.cos(frame) * 7;
-      camera.position.z = Math.sin(frame) * 7;
-      camera.position.y = 5 + Math.sin(frame * 0.5) * 2;
-      camera.lookAt(0, 0, 0);
-
       // Pulse the point sizes
       material.size = 0.2 + Math.sin(frame * 2) * 0.05;
-
+      
+      // Pulse the point light intensity
+      pointLight.intensity = 0.6 + Math.sin(frame) * 0.2;
+      
+      // Update controls
+      controls.update();
+      
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
     };
     animate();
 
-    // Add glow post-processing
-    const composer = new THREE.WebGLRenderer({ antialias: true });
-    composer.setSize(width, height);
+    // Handle window resize
+    const handleResize = () => {
+      updateDimensions();
+      
+      if (containerRef.current) {
+        camera.aspect = dimensions.width / dimensions.height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(dimensions.width, dimensions.height);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
 
     return () => {
       if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+        while (containerRef.current.firstChild) {
+          containerRef.current.removeChild(containerRef.current.firstChild);
+        }
       }
+      window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [isAutoRotating, dimensions.width, dimensions.height]);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="w-[400px] h-[300px] bg-[#000033] rounded-lg overflow-hidden mb-5 shadow-[0_0_20px_rgba(0,255,255,0.2)] border border-[rgba(0,255,255,0.1)]" 
-    />
+    <div className="relative">
+      <div 
+        ref={containerRef} 
+        className="w-full h-[400px] bg-[#000033] rounded-lg overflow-hidden shadow-[0_0_20px_rgba(0,255,255,0.2)] border border-[rgba(0,255,255,0.1)]" 
+      />
+      <div className="flex justify-end mt-3">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8"
+          onClick={() => setIsAutoRotating(prev => !prev)}
+        >
+          {isAutoRotating ? "Stop Auto-Rotation" : "Enable Auto-Rotation"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -404,35 +486,66 @@ export default function DataViewerPage() {
 
               {/* Terrain */}
               <TabsContent value="terrain" className="p-4">
-                <h2 className="text-xl font-semibold mb-4">Terrain Grid Points</h2>
-                <div className="flex flex-col lg:flex-row gap-6 mb-4">
-                  <div className="flex-shrink-0">
+                <h2 className="text-xl font-semibold mb-4">3D Interactive Terrain Model</h2>
+                <div className="grid grid-cols-1 gap-6 mb-4">
+                  <div className="bg-black/10 p-4 rounded-lg">
+                    <div className="text-sm font-medium mb-3">Terrain Point Cloud</div>
                     <TerrainVisualization />
                   </div>
-                  <div className="flex-grow overflow-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">Latitude</TableHead>
-                          <TableHead className="text-right">Longitude</TableHead>
-                          <TableHead className="text-right">Elevation (ft)</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {terrain.terrain_grid.slice(0, 30).map((point, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="text-right">{point.lat.toFixed(4)}</TableCell>
-                            <TableCell className="text-right">{point.lon.toFixed(4)}</TableCell>
-                            <TableCell className="text-right">{point.elevation}</TableCell>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="overflow-auto">
+                      <h3 className="text-lg font-medium mb-3">Terrain Grid Points</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">Latitude</TableHead>
+                            <TableHead className="text-right">Longitude</TableHead>
+                            <TableHead className="text-right">Elevation (ft)</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    {terrain.terrain_grid.length > 30 && (
-                      <p className="text-center text-muted-foreground text-sm mt-2">
-                        (Showing 30 of {terrain.terrain_grid.length} terrain points)
-                      </p>
-                    )}
+                        </TableHeader>
+                        <TableBody>
+                          {terrain.terrain_grid.slice(0, 15).map((point, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="text-right">{point.lat.toFixed(4)}</TableCell>
+                              <TableCell className="text-right">{point.lon.toFixed(4)}</TableCell>
+                              <TableCell className="text-right">{point.elevation}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {terrain.terrain_grid.length > 15 && (
+                        <p className="text-center text-muted-foreground text-sm mt-2">
+                          (Showing 15 of {terrain.terrain_grid.length} terrain points)
+                        </p>
+                      )}
+                    </div>
+                    <div className="overflow-auto">
+                      <h3 className="text-lg font-medium mb-3">Terrain Statistics</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Elevation Range</div>
+                          <div className="font-mono text-lg">
+                            {Math.min(...terrain.terrain_grid.map(p => p.elevation))}ft - {Math.max(...terrain.terrain_grid.map(p => p.elevation))}ft
+                          </div>
+                        </div>
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Data Points</div>
+                          <div className="font-mono text-lg">{terrain.terrain_grid.length}</div>
+                        </div>
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Area Coverage</div>
+                          <div className="font-mono text-lg">
+                            {(Math.max(...terrain.terrain_grid.map(p => p.lat)) - Math.min(...terrain.terrain_grid.map(p => p.lat))).toFixed(2)}° x {(Math.max(...terrain.terrain_grid.map(p => p.lon)) - Math.min(...terrain.terrain_grid.map(p => p.lon))).toFixed(2)}°
+                          </div>
+                        </div>
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Highest Point</div>
+                          <div className="font-mono text-lg">
+                            {Math.max(...terrain.terrain_grid.map(p => p.elevation))}ft
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
