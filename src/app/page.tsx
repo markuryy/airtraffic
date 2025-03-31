@@ -1,10 +1,34 @@
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { RainbowButton } from '@/components/magicui/rainbow-button';
+import { Globe } from '@/components/magicui/globe';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">My Portfolio</h1>
+      {/* Hero Section */}
+       <div className="max-w-7xl mx-auto relative z-10">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+           <div className="order-2 lg:order-1">
+             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-blue-500">
+               Air Traffic Simulator
+             </h1>
+             <p className="text-lg text-muted-foreground mb-8">
+               A radar simulation leveraging real-world geospatial data and aeronautical calculations 
+               to create realistic aircraft behavior in the Buffalo-Niagara airspace.
+             </p>
+             <Link href="/air-traffic"> 
+               <RainbowButton className="text-lg px-8 py-3">
+                 Launch Interactive Simulation →
+               </RainbowButton>
+             </Link>
+           </div>
+           <div className="order-1 lg:order-2 relative h-[400px] z-0">
+             <Globe className="absolute inset-0" />
+           </div>
+         </div>
+       </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link 
             href="/air-traffic"
