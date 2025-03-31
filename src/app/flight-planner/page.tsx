@@ -356,7 +356,7 @@ export default function FlightPlannerPage() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      Enter flight level (080) or append 'A' for direct altitude (8000A)
+                      Enter flight level (080) or append &apos;A&apos; for direct altitude (8000A)
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -604,7 +604,7 @@ export default function FlightPlannerPage() {
                   ✓ Flight Plan Validation Successful
                 </p>
                 <ul className="list-disc pl-5 text-sm text-green-600 dark:text-green-300">
-                  <li>Aircraft type "{formData.aircraft?.id}" is valid</li>
+                  <li>Aircraft type &quot;{formData.aircraft?.id}&quot; is valid</li>
                   <li>Speed {formData.speed}kt is within acceptable range</li>
                   <li>Altitude {formatAltitudeDisplay(formData.altitude)} is above minimum</li>
                   <li>Fuel quantity {formData.fuel}gal is sufficient</li>
