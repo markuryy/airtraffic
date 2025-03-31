@@ -20,19 +20,12 @@ import airportList from '@/data/airport-list.json';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
 
 interface Position {
   lat: number;
   lon: number;
   altitude: number;
   timestamp: number;
-}
-
-interface FlightUpdate {
-  id: string;
-  position: Position;
-  completed: boolean;
 }
 
 interface ActiveFlight extends StoredFlightPlan {
