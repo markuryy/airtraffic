@@ -113,14 +113,23 @@ const BentoCard = ({
         "group relative col-span-1 md:col-span-1 flex flex-col justify-between overflow-hidden rounded-xl",
         "h-full transition-all duration-300 transform-gpu will-change-transform hover:scale-[1.02] hover:z-10",
         "bg-card text-card-foreground border",
-        `hover:${scheme.shadow} hover:shadow-xl hover:bg-gradient-to-br hover:${customFrom} hover:${customTo} hover:${scheme.border}`,
+        "hover:shadow-xl",
         className,
       )}
       {...props}
     >
-      <div className="flex flex-col h-full">
-        <div className="p-6 pb-3 flex items-center gap-2 border-b border-border/40">
-          <Icon className={`h-5 w-5 text-${color}-500 group-hover:${scheme.text}`} />
+      {/* Add a background div that's only visible on hover */}
+      <div className={cn(
+        "absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100",
+        "bg-gradient-to-br border",
+        scheme.from,
+        scheme.to,
+        scheme.border
+      )} />
+      
+      <div className="flex flex-col h-full relative z-10">
+        <div className="p-6 pb-3 flex items-center gap-2 border-b border-border/40 group-hover:border-border/20">
+          <Icon className={`h-5 w-5 text-muted-foreground group-hover:${scheme.text}`} />
           <h3 className={`text-xl font-semibold group-hover:${scheme.text}`}>
             {name}
           </h3>
@@ -131,10 +140,10 @@ const BentoCard = ({
           </p>
           {children}
         </div>
-        <div className="p-6 pt-3 border-t border-border/40 mt-auto">
+        <div className="p-6 pt-3 border-t border-border/40 group-hover:border-border/20 mt-auto">
           <Button 
             asChild 
-            className={`w-full group-hover:${scheme.button} group-hover:${scheme.text}`}
+            className={`w-full group-hover:${scheme.button} group-hover:hover:${scheme.button}/90`}
           >
             <Link href={href}>
               {cta}
@@ -143,9 +152,6 @@ const BentoCard = ({
           </Button>
         </div>
       </div>
-      
-      {/* Animated hover effect overlay */}
-      <div className="pointer-events-none absolute inset-0 opacity-0 bg-gradient-to-br from-transparent to-black/5 transition-all duration-300 group-hover:opacity-100" />
     </div>
   );
 };

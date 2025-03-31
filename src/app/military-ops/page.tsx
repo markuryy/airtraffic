@@ -3,28 +3,22 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  Button,
-  Stack,
-  IconButton,
-  Tooltip,
-  Chip,
-} from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  FlightTakeoff as FlightTakeoffIcon,
-  Speed as SpeedIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+  ArrowLeft,
+  PlaneTakeoff,
+  Timer,
+  AlertTriangle,
+} from 'lucide-react';
 import { getFlightPlans, saveFlightPlan } from '@/lib/flightPlanStorage';
 import { StoredFlightPlan } from '@/types/flightPlan';
 import aircraftTypes from '@/data/aircraft-types.json';
 import * as turf from '@turf/turf';
 import { Units } from '@turf/helpers';
 import AudioPlayer from '@/components/AudioPlayer';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 // Get F-22 data
 const F22 = aircraftTypes.types.find(type => type.id === 'F22')!;
@@ -131,177 +125,157 @@ export default function MilitaryOpsPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.900', py: 4 }}>
-      <Container maxWidth="lg">
+    <main className="min-h-screen bg-black text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background grid */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Grid lines resembling radar */}
+        <div className="absolute inset-0 grid grid-cols-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`vline-${i}`} className="h-full w-px bg-red-300"></div>
+          ))}
+        </div>
+        <div className="absolute inset-0 grid grid-rows-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`hline-${i}`} className="w-full h-px bg-red-300"></div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              sx={{ color: 'grey.500' }}
-            >
+        <div className="mb-8 flex justify-between items-center">
+          <Button variant="ghost" asChild className="text-gray-400 hover:text-gray-300">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
-            </Button>
-          </Link>
-          <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <WarningIcon sx={{ fontSize: 32 }} />
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold text-red-500 flex items-center gap-2">
+            <AlertTriangle className="h-8 w-8" />
             Military Operations Center
-          </Typography>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontFamily: 'monospace',
-              color: 'error.main',
-              fontWeight: 'medium'
-            }}
-          >
+          </h1>
+          <div className="font-mono text-red-500 text-xl">
             {currentTime.toISOString().slice(11, 19)}Z
-          </Typography>
-        </Box>
+          </div>
+        </div>
 
         {/* Main Content */}
-        <Stack spacing={4}>
+        <div className="space-y-6">
           {/* Civilian Flights Section */}
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              borderRadius: 2, 
-              bgcolor: 'grey.800',
-              border: '1px solid',
-              borderColor: 'error.dark'
-            }}
-          >
-            <Typography variant="h6" sx={{ color: 'grey.300', mb: 3 }}>
-              Active Civilian Flights
-            </Typography>
+          <Card className="bg-gray-900 border border-red-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-gray-300">
+                Active Civilian Flights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {activeFlights.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No active civilian flights
+                  </div>
+                ) : (
+                  activeFlights.map((flight) => (
+                    <Card 
+                      key={flight.id} 
+                      className={`bg-gray-950 border-l-4 ${
+                        interceptFlights.has(flight.id) ? 'border-l-red-600' : 'border-l-yellow-600'
+                      }`}
+                    >
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div>
+                          <p className="text-gray-300 font-mono">
+                            {flight.aircraft?.id} - {formatPosition(flight)}
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            FL{flight.altitude} @ {flight.speed}kt
+                          </p>
+                        </div>
 
-            <Stack spacing={2}>
-              {activeFlights.length === 0 ? (
-                <Typography color="grey.500" sx={{ textAlign: 'center', py: 4 }}>
-                  No active civilian flights
-                </Typography>
-              ) : (
-                activeFlights.map((flight) => (
-                  <Paper
-                    key={flight.id}
-                    elevation={1}
-                    sx={{
-                      p: 2,
-                      bgcolor: 'grey.900',
-                      borderLeft: 6,
-                      borderColor: interceptFlights.has(flight.id) ? 'error.main' : 'warning.main',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Box>
-                        <Typography sx={{ color: 'grey.300', fontFamily: 'monospace' }}>
-                          {flight.aircraft?.id} - {formatPosition(flight)}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'grey.500', mt: 1 }}>
-                          FL{flight.altitude} @ {flight.speed}kt
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        {interceptFlights.has(flight.id) ? (
-                          <Chip
-                            icon={<SpeedIcon />}
-                            label="F-22 DISPATCHED"
-                            color="error"
-                            variant="outlined"
-                          />
-                        ) : (
-                          <Tooltip title="Create F-22 Raptor intercept flight plan">
+                        <div>
+                          {interceptFlights.has(flight.id) ? (
+                            <Badge variant="destructive" className="flex items-center gap-1">
+                              <Timer className="h-3 w-3" />
+                              F-22 DISPATCHED
+                            </Badge>
+                          ) : (
                             <Button
-                              variant="contained"
-                              color="error"
-                              startIcon={<FlightTakeoffIcon />}
+                              variant="destructive"
                               onClick={() => dispatchIntercept(flight)}
+                              className="flex items-center gap-1"
                             >
+                              <PlaneTakeoff className="h-4 w-4" />
                               Scramble F-22
                             </Button>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </Box>
-                  </Paper>
-                ))
-              )}
-            </Stack>
-          </Paper>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Active Intercepts Section */}
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              borderRadius: 2, 
-              bgcolor: 'grey.800',
-              border: '1px solid',
-              borderColor: 'error.dark'
-            }}
-          >
-            <Typography variant="h6" sx={{ color: 'error.main', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SpeedIcon />
-              Active F-22 Intercepts
-            </Typography>
-
-            <Stack spacing={2}>
-              {activeInterceptFlights.length === 0 ? (
-                <Typography color="grey.500" sx={{ textAlign: 'center', py: 4 }}>
-                  No active intercept missions
-                </Typography>
-              ) : (
-                activeInterceptFlights.map((flight) => (
-                  <Paper
-                    key={flight.id}
-                    elevation={1}
-                    sx={{
-                      p: 2,
-                      bgcolor: 'grey.900',
-                      borderLeft: 6,
-                      borderColor: 'error.main',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Box>
-                        <Typography sx={{ color: 'error.light', fontFamily: 'monospace' }}>
-                          {flight.aircraft?.id} - {formatPosition(flight)}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'grey.500', mt: 1 }}>
-                          FL{flight.altitude} @ {flight.speed}kt
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'error.light', display: 'block', mt: 1 }}>
-                          Intercepting: {flight.id.replace('INTERCEPT-', '')}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Paper>
-                ))
-              )}
-            </Stack>
-          </Paper>
+          <Card className="bg-gray-900 border border-red-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-red-500 flex items-center gap-2">
+                <Timer className="h-5 w-5" />
+                Active F-22 Intercepts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {activeInterceptFlights.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No active intercept missions
+                  </div>
+                ) : (
+                  activeInterceptFlights.map((flight) => (
+                    <Card 
+                      key={flight.id} 
+                      className="bg-gray-950 border-l-4 border-l-red-600"
+                    >
+                      <CardContent className="p-4">
+                        <div>
+                          <p className="text-red-400 font-mono">
+                            {flight.aircraft?.id} - {formatPosition(flight)}
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            FL{flight.altitude} @ {flight.speed}kt
+                          </p>
+                          <p className="text-red-400 text-xs mt-1">
+                            Intercepting: {flight.id.replace('INTERCEPT-', '')}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* F-22 Stats */}
-          <Box sx={{ mt: 4, p: 3, bgcolor: 'grey.900', borderRadius: 1 }}>
-            <Typography variant="h6" sx={{ color: 'error.main', mb: 2 }}>
+          <Card className="bg-gray-950 p-5">
+            <CardTitle className="text-red-500 mb-4 text-xl">
               F-22 Raptor Combat Air Patrol
-            </Typography>
-            <Stack direction="row" spacing={4}>
-              <Typography sx={{ color: 'grey.300', fontFamily: 'monospace' }}>
+            </CardTitle>
+            <div className="flex flex-wrap gap-6">
+              <div className="text-gray-300 font-mono">
                 Max Speed: {F22.cruiseSpeed}kt
-              </Typography>
-              <Typography sx={{ color: 'grey.300', fontFamily: 'monospace' }}>
+              </div>
+              <div className="text-gray-300 font-mono">
                 Fuel Capacity: {F22.maxFuel}gal
-              </Typography>
-              <Typography sx={{ color: 'grey.300', fontFamily: 'monospace' }}>
+              </div>
+              <div className="text-gray-300 font-mono">
                 Fuel Burn: {F22.fuelBurn}gal/hr
-              </Typography>
-            </Stack>
-          </Box>
-        </Stack>
-      </Container>
-    </Box>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </main>
   );
-} 
+}

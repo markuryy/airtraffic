@@ -3,34 +3,29 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  TextField,
-  IconButton,
-  Button,
-  Stack,
-  Divider,
-  InputAdornment,
-  Tooltip,
-  Autocomplete,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Menu as MenuIcon,
-  Save as SaveIcon,
-  Share as ShareIcon,
-  FlightTakeoff as FlightTakeoffIcon,
-  Route as RouteIcon,
-  ArrowBack as ArrowBackIcon,
-} from '@mui/icons-material';
+  ArrowLeft,
+  Plus,
+  Menu,
+  Save,
+  Share,
+  PlaneTakeoff,
+  Route,
+} from 'lucide-react';
 import aircraftTypes from '@/data/aircraft-types.json';
 import airportList from '@/data/airport-list.json';
 import { validateFlightPlan, submitFlightPlan, calculateFuelRequired } from '@/lib/flightPlanValidation';
 import { ValidationError, StoredFlightPlan, Airport, AircraftType } from '@/types/flightPlan';
 import { saveFlightPlan } from '@/lib/flightPlanStorage';
 import AltitudeProfile from '@/components/AltitudeProfile';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function FlightPlannerPage() {
   const [formData, setFormData] = useState({
@@ -49,6 +44,9 @@ export default function FlightPlannerPage() {
     fuelBurn: '0.0'
   });
 
+  const [openAircraftCommand, setOpenAircraftCommand] = useState(false);
+  const [openDepartureCommand, setOpenDepartureCommand] = useState(false);
+  const [openDestinationCommand, setOpenDestinationCommand] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [validationSuccess, setValidationSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -217,423 +215,448 @@ export default function FlightPlannerPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100', py: 4 }}>
-      <Container maxWidth="lg">
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-          {/* Back to Home Link */}
-          <Box sx={{ mb: 3 }}>
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              <Button
-                startIcon={<ArrowBackIcon />}
-                sx={{ color: 'text.secondary' }}
-              >
-                Back to Home
-              </Button>
+    <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background grid */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Grid lines resembling radar */}
+        <div className="absolute inset-0 grid grid-cols-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`vline-${i}`} className="h-full w-px bg-blue-300"></div>
+          ))}
+        </div>
+        <div className="absolute inset-0 grid grid-rows-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`hline-${i}`} className="w-full h-px bg-blue-300"></div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Back to Home Link */}
+        <div className="mb-6">
+          <Button variant="ghost" asChild className="text-muted-foreground">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
             </Link>
-          </Box>
+          </Button>
+        </div>
 
-          {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FlightTakeoffIcon sx={{ fontSize: 32 }} />
+        <Card className="bg-card shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between px-6">
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <PlaneTakeoff className="h-6 w-6" />
               Flight Plan
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="New Plan">
-                <IconButton>
-                  <AddIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Menu">
-                <IconButton>
-                  <MenuIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Save">
-                <IconButton>
-                  <SaveIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Share">
-                <IconButton>
-                  <ShareIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Box>
-
-          {/* Aircraft Details */}
-          <Stack spacing={3}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Autocomplete
-                options={aircraftTypes.types}
-                value={formData.aircraft}
-                onChange={(_, newValue) => {
-                  if (typeof newValue === 'string') {
-                    const matchedType = aircraftTypes.types.find(type => type.id === newValue.toUpperCase());
-                    handleAircraftChange(matchedType || null);
-                  } else {
-                    handleAircraftChange(newValue);
-                  }
-                }}
-                sx={{ width: 200 }}
-                freeSolo
-                autoSelect
-                getOptionLabel={(option) => {
-                  if (typeof option === 'string') return option;
-                  return option?.id || '';
-                }}
-                renderOption={(props, option) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <Box component="li" key={key} {...otherProps}>
-                      <Typography sx={{ fontFamily: 'monospace', mr: 1 }}>{option.id}</Typography>
-                      <Typography color="text.secondary">- {option.label}</Typography>
-                    </Box>
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Aircraft" 
-                    size="small"
-                    inputProps={{
-                      ...params.inputProps,
-                      style: { fontFamily: 'monospace', textTransform: 'uppercase' }
-                    }}
-                  />
-                )}
-                onInputChange={(_, value) => {
-                  const upperValue = value.toUpperCase();
-                  const matchedType = aircraftTypes.types.find(type => type.id === upperValue);
-                  if (matchedType) {
-                    handleAircraftChange(matchedType);
-                  }
-                }}
-              />
-              <TextField
-                label="Speed"
-                value={formData.speed}
-                onChange={handleChange('speed')}
-                sx={{ width: 100 }}
-                size="small"
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">kt</InputAdornment>,
-                }}
-              />
-              <TextField
-                label="Altitude"
-                value={formData.altitudeInput}
-                onChange={handleAltitudeChange}
-                sx={{ width: 140 }}
-                size="small"
-                InputProps={{
-                  endAdornment: (
-                    <Tooltip title="Enter flight level (080) or append 'A' for direct altitude (8000A)">
-                      <InputAdornment position="end">
-                        {formatAltitudeDisplay(formData.altitude)}
-                      </InputAdornment>
-                    </Tooltip>
-                  ),
-                  style: { fontFamily: 'monospace' }
-                }}
-                placeholder="080"
-              />
-              <TextField
-                label="Fuel"
-                value={formData.fuel}
-                onChange={handleChange('fuel')}
-                sx={{ width: 100 }}
-                size="small"
-                InputProps={{
-                  endAdornment: (
-                    <Tooltip title={`Required fuel breakdown:
-• Climb: ${fuelCalculation.climbFuel.toFixed(1)} gal
-• Cruise: ${fuelCalculation.cruiseFuel.toFixed(1)} gal
-• Descent: ${fuelCalculation.descentFuel.toFixed(1)} gal
-• Reserve: ${fuelCalculation.reserveFuel.toFixed(1)} gal
-Total: ${fuelCalculation.totalFuel.toFixed(1)} gal`}>
-                      <InputAdornment position="end">gal</InputAdornment>
-                    </Tooltip>
-                  ),
-                }}
-                error={formData.fuel !== '' && parseFloat(formData.fuel) < fuelCalculation.totalFuel}
-                helperText={formData.fuel !== '' && parseFloat(formData.fuel) < fuelCalculation.totalFuel ? 
-                  `Minimum ${fuelCalculation.totalFuel.toFixed(1)} gal required` : ''}
-              />
-              {formData.aircraft && (
-                <Tooltip title={`Fill to maximum capacity (${formData.aircraft.maxFuel} gal)`}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setFormData(prev => ({ ...prev, fuel: formData.aircraft!.maxFuel.toString() }))}
-                    sx={{ ml: 1, height: 40 }}
-                  >
-                    Fill Max
-                  </Button>
+            </CardTitle>
+            <div className="flex space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>New Plan</TooltipContent>
                 </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Menu</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Save className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Save</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Share className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Share</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6 pb-6 space-y-6">
+            {/* Aircraft Details */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="w-[200px]">
+                <Popover open={openAircraftCommand} onOpenChange={setOpenAircraftCommand}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      role="combobox" 
+                      className="w-full justify-between font-mono"
+                    >
+                      {formData.aircraft ? formData.aircraft.id : "Select Aircraft..."}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search aircraft..." />
+                      <CommandList>
+                        <CommandEmpty>No aircraft found.</CommandEmpty>
+                        <CommandGroup>
+                          {aircraftTypes.types.map((aircraft) => (
+                            <CommandItem
+                              key={aircraft.id}
+                              value={aircraft.id}
+                              onSelect={() => {
+                                handleAircraftChange(aircraft);
+                                setOpenAircraftCommand(false);
+                              }}
+                              className="flex justify-between"
+                            >
+                              <span className="font-mono">{aircraft.id}</span>
+                              <span className="text-muted-foreground text-sm">- {aircraft.label}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="flex items-center">
+                <div className="relative w-[100px]">
+                  <Input
+                    value={formData.speed}
+                    onChange={handleChange('speed')}
+                    className="font-mono pr-8"
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                    kt
+                  </div>
+                </div>
+              </div>
+              
+              <div className="relative">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-[140px] relative">
+                        <Input
+                          value={formData.altitudeInput}
+                          onChange={handleAltitudeChange}
+                          className="font-mono pr-16"
+                          placeholder="080"
+                        />
+                        <div className="absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                          {formatAltitudeDisplay(formData.altitude)}
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      Enter flight level (080) or append 'A' for direct altitude (8000A)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              <div className="relative">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-[100px] relative">
+                        <Input
+                          value={formData.fuel}
+                          onChange={handleChange('fuel')}
+                          className={`font-mono pr-8 ${
+                            formData.fuel !== '' && 
+                            parseFloat(formData.fuel) < fuelCalculation.totalFuel ? 
+                            'border-red-500' : ''
+                          }`}
+                        />
+                        <div className="absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                          gal
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="space-y-1 text-sm">
+                        <div>Required fuel breakdown:</div>
+                        <div>• Climb: {fuelCalculation.climbFuel.toFixed(1)} gal</div>
+                        <div>• Cruise: {fuelCalculation.cruiseFuel.toFixed(1)} gal</div>
+                        <div>• Descent: {fuelCalculation.descentFuel.toFixed(1)} gal</div>
+                        <div>• Reserve: {fuelCalculation.reserveFuel.toFixed(1)} gal</div>
+                        <div>Total: {fuelCalculation.totalFuel.toFixed(1)} gal</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {formData.fuel !== '' && parseFloat(formData.fuel) < fuelCalculation.totalFuel && (
+                  <div className="text-xs text-red-500 mt-1">
+                    Minimum {fuelCalculation.totalFuel.toFixed(1)} gal required
+                  </div>
+                )}
+              </div>
+              
+              {formData.aircraft && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ 
+                          ...prev, 
+                          fuel: formData.aircraft!.maxFuel.toString() 
+                        }))}
+                      >
+                        Fill Max
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Fill to maximum capacity ({formData.aircraft.maxFuel} gal)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
-            </Box>
+            </div>
 
             {/* Route */}
-            <Stack spacing={2} direction="row">
-              <Autocomplete
-                options={airportList.airports}
-                value={formData.departure}
-                onChange={(_, newValue) => {
-                  if (typeof newValue === 'string') {
-                    const matchedAirport = airportList.airports.find(a => a.id === newValue.toUpperCase());
-                    setFormData(prev => ({ ...prev, departure: matchedAirport || null }));
-                  } else {
-                    setFormData(prev => ({ ...prev, departure: newValue }));
-                  }
-                }}
-                sx={{ width: 140 }}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Departure" 
-                    size="small"
-                    inputProps={{
-                      ...params.inputProps,
-                      style: { fontFamily: 'monospace', textTransform: 'uppercase' }
-                    }}
-                  />
-                )}
-                getOptionLabel={(option) => {
-                  if (typeof option === 'string') return option;
-                  return option?.id || '';
-                }}
-                renderOption={(props, option) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <Box component="li" key={key} {...otherProps}>
-                      <Typography sx={{ fontFamily: 'monospace', mr: 1 }}>{option.id}</Typography>
-                      <Typography color="text.secondary">- {option.name}</Typography>
-                    </Box>
-                  );
-                }}
-                freeSolo
-                autoSelect
-              />
-              <Typography variant="h6" color="text.secondary" sx={{ mx: 1 }}>→</Typography>
-              <Autocomplete
-                options={airportList.airports}
-                value={formData.destination}
-                onChange={(_, newValue) => {
-                  if (typeof newValue === 'string') {
-                    const matchedAirport = airportList.airports.find(a => a.id === newValue.toUpperCase());
-                    setFormData(prev => ({ ...prev, destination: matchedAirport || null }));
-                  } else {
-                    setFormData(prev => ({ ...prev, destination: newValue }));
-                  }
-                }}
-                sx={{ width: 140 }}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Destination" 
-                    size="small"
-                    inputProps={{
-                      ...params.inputProps,
-                      style: { fontFamily: 'monospace', textTransform: 'uppercase' }
-                    }}
-                  />
-                )}
-                getOptionLabel={(option) => {
-                  if (typeof option === 'string') return option;
-                  return option?.id || '';
-                }}
-                renderOption={(props, option) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <Box component="li" key={key} {...otherProps}>
-                      <Typography sx={{ fontFamily: 'monospace', mr: 1 }}>{option.id}</Typography>
-                      <Typography color="text.secondary">- {option.name}</Typography>
-                    </Box>
-                  );
-                }}
-                freeSolo
-                autoSelect
-              />
-            </Stack>
+            <div className="flex items-center space-x-2">
+              <div className="w-[140px]">
+                <Popover open={openDepartureCommand} onOpenChange={setOpenDepartureCommand}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      role="combobox" 
+                      className="w-full justify-between font-mono"
+                    >
+                      {formData.departure ? formData.departure.id : "Departure"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search airports..." />
+                      <CommandList>
+                        <CommandEmpty>No airports found.</CommandEmpty>
+                        <CommandGroup>
+                          {airportList.airports.map((airport) => (
+                            <CommandItem
+                              key={airport.id}
+                              value={airport.id}
+                              onSelect={() => {
+                                setFormData(prev => ({ ...prev, departure: airport }));
+                                setOpenDepartureCommand(false);
+                              }}
+                              className="flex justify-between"
+                            >
+                              <span className="font-mono">{airport.id}</span>
+                              <span className="text-muted-foreground text-sm truncate ml-2">- {airport.name}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="text-xl text-muted-foreground">→</div>
+              
+              <div className="w-[140px]">
+                <Popover open={openDestinationCommand} onOpenChange={setOpenDestinationCommand}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      role="combobox" 
+                      className="w-full justify-between font-mono"
+                    >
+                      {formData.destination ? formData.destination.id : "Destination"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search airports..." />
+                      <CommandList>
+                        <CommandEmpty>No airports found.</CommandEmpty>
+                        <CommandGroup>
+                          {airportList.airports.map((airport) => (
+                            <CommandItem
+                              key={airport.id}
+                              value={airport.id}
+                              onSelect={() => {
+                                setFormData(prev => ({ ...prev, destination: airport }));
+                                setOpenDestinationCommand(false);
+                              }}
+                              className="flex justify-between"
+                            >
+                              <span className="font-mono">{airport.id}</span>
+                              <span className="text-muted-foreground text-sm truncate ml-2">- {airport.name}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
 
             {/* Time */}
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Stack spacing={2} sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary">ETD (Zulu)</Typography>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <TextField
-                    placeholder="HHMM"
-                    value={formData.etdTime}
-                    onChange={handleChange('etdTime')}
-                    size="small"
-                    sx={{ width: 100 }}
-                    inputProps={{
-                      style: { fontFamily: 'monospace' }
-                    }}
-                  />
-                  <TextField
-                    placeholder="MM/DD"
-                    value={formData.etdDate}
-                    onChange={handleChange('etdDate')}
-                    size="small"
-                    sx={{ width: 100 }}
-                    inputProps={{
-                      style: { fontFamily: 'monospace' }
-                    }}
-                  />
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      ml: 2,
-                      minWidth: 80,
-                      fontFamily: 'monospace'
-                    }}
-                  >
-                    {calculateTimeDifference()}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Box>
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">ETD (Zulu)</h4>
+              <div className="flex gap-3 items-center">
+                <Input
+                  placeholder="HHMM"
+                  value={formData.etdTime}
+                  onChange={handleChange('etdTime')}
+                  className="w-[100px] font-mono"
+                />
+                <Input
+                  placeholder="MM/DD"
+                  value={formData.etdDate}
+                  onChange={handleChange('etdDate')}
+                  className="w-[100px] font-mono"
+                />
+                <div className="text-sm text-muted-foreground font-mono min-w-[80px]">
+                  {calculateTimeDifference()}
+                </div>
+              </div>
+            </div>
 
             {/* Route Planning */}
-            <Box sx={{ display: 'flex', gap: 3 }}>
-              <Stack spacing={1} sx={{ width: 120 }}>
-                <Typography variant="body2" color="text.secondary">
+            <div className="flex gap-4">
+              <div className="w-[120px] space-y-1">
+                <div className="text-sm text-muted-foreground">
                   Distance: {formData.distance} nm
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div className="text-sm text-muted-foreground">
                   ETE: {formData.ete}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div className="text-sm text-muted-foreground">
                   Fuel Burn: {formData.fuelBurn} gal
-                </Typography>
-              </Stack>
-              <Box sx={{ flex: 1 }}>
-                <TextField
-                  multiline
-                  rows={4}
+                </div>
+              </div>
+              <div className="flex-1">
+                <Textarea
                   placeholder="Enter waypoints here..."
                   value={formData.waypoints}
                   onChange={handleChange('waypoints')}
-                  fullWidth
-                  sx={{ fontFamily: 'monospace' }}
+                  className="h-24 font-mono resize-none"
                 />
-              </Box>
-              <Box sx={{ width: 120, display: 'flex', alignItems: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<RouteIcon />}
-                  fullWidth
-                  size="small"
+              </div>
+              <div className="w-[120px] flex items-end">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  size="sm"
                 >
+                  <Route className="mr-2 h-4 w-4" />
                   Routes
                 </Button>
-              </Box>
-            </Box>
+              </div>
+            </div>
 
             {/* Altitude Profile */}
             {formData.departure && formData.destination && (
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <div className="mt-3">
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">
                   Altitude Profile
-                </Typography>
+                </h4>
                 <AltitudeProfile
                   departure={formData.departure}
                   destination={formData.destination}
                   altitude={formData.altitude}
                   aircraftSpeed={parseInt(formData.speed)}
                 />
-              </Box>
+              </div>
             )}
 
             {/* Validation Status */}
             {hasAttemptedSubmit && !validationSuccess && !validationErrors.length && (
-              <Box sx={{ mt: 2, bgcolor: 'info.light', p: 2, borderRadius: 1 }}>
-                <Typography color="info.contrastText" variant="subtitle2">
+              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-md">
+                <p className="text-blue-700 dark:text-blue-200 text-sm font-medium">
                   Please validate your flight plan before submitting
-                </Typography>
-              </Box>
+                </p>
+              </div>
             )}
 
             {/* Validation Errors */}
             {validationErrors.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography color="error" variant="subtitle2" gutterBottom>
+              <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-md">
+                <p className="text-red-700 dark:text-red-200 text-sm font-medium mb-1">
                   Please correct the following errors:
-                </Typography>
-                <ul style={{ color: '#d32f2f', margin: 0 }}>
+                </p>
+                <ul className="list-disc pl-5 text-sm text-red-600 dark:text-red-300">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error.message}</li>
                   ))}
                 </ul>
-              </Box>
+              </div>
             )}
 
             {/* Validation Success */}
             {validationSuccess && !submitSuccess && (
-              <Box sx={{ mt: 2, bgcolor: 'success.light', p: 2, borderRadius: 1 }}>
-                <Typography color="success.contrastText" variant="subtitle2" gutterBottom>
+              <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-md">
+                <p className="text-green-700 dark:text-green-200 text-sm font-medium mb-1">
                   ✓ Flight Plan Validation Successful
-                </Typography>
-                <Box component="ul" sx={{ color: 'success.contrastText', m: 0, pl: 2 }}>
+                </p>
+                <ul className="list-disc pl-5 text-sm text-green-600 dark:text-green-300">
                   <li>Aircraft type "{formData.aircraft?.id}" is valid</li>
                   <li>Speed {formData.speed}kt is within acceptable range</li>
                   <li>Altitude {formatAltitudeDisplay(formData.altitude)} is above minimum</li>
                   <li>Fuel quantity {formData.fuel}gal is sufficient</li>
                   <li>Valid route: {formData.departure?.id} → {formData.destination?.id}</li>
                   <li>ETD {formData.etdTime} {formData.etdDate}Z is properly formatted</li>
-                </Box>
-              </Box>
+                </ul>
+              </div>
             )}
 
             {/* Submit Success */}
             {submitSuccess && (
-              <Box sx={{ mt: 2, bgcolor: 'success.light', p: 2, borderRadius: 1 }}>
-                <Typography color="success.contrastText" variant="subtitle2" gutterBottom>
+              <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-md">
+                <p className="text-green-700 dark:text-green-200 text-sm font-medium mb-2">
                   ✓ Flight Plan Submitted Successfully
-                </Typography>
-                <Box sx={{ color: 'success.contrastText', mt: 1 }}>
-                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                </p>
+                <div className="text-green-600 dark:text-green-300 text-sm space-y-1">
+                  <p className="font-mono">
                     Flight Plan ID: {submitSuccess.id}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
+                  </p>
+                  <p>
                     From: {submitSuccess.departure?.id} → To: {submitSuccess.destination?.id}
-                  </Typography>
-                  <Typography variant="body2">
+                  </p>
+                  <p>
                     ETD: {submitSuccess.etdTime}Z {submitSuccess.etdDate}
-                  </Typography>
-                </Box>
-              </Box>
+                  </p>
+                </div>
+              </div>
             )}
 
-            <Divider sx={{ my: 2 }} />
+            <Separator className="my-4" />
 
             {/* Actions */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+            <div className="flex justify-between gap-4">
               <Button
-                variant="outlined"
-                size="large"
+                variant="outline"
                 onClick={handleValidate}
                 disabled={isSubmitting}
+                className="px-6"
               >
                 Validate Plan
               </Button>
               <Button
-                variant="contained"
-                size="large"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                color={validationSuccess ? "primary" : "inherit"}
+                className={`px-6 ${validationSuccess ? "" : "opacity-70"}`}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Plan'}
               </Button>
-            </Box>
-          </Stack>
-        </Paper>
-      </Container>
-    </Box>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
-} 
+}
