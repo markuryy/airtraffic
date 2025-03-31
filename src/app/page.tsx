@@ -26,12 +26,12 @@ export default function Home() {
                 </RainbowButton>
               </Link>
             </div>
-            <div className="order-1 lg:order-2 relative h-[400px] z-0">
+            <div className="order-1 lg:order-2 relative h-[400px] z-[-1]">
               <Globe className="absolute inset-0" />
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-20">
           <Link href="/air-traffic">
             <Card className="h-full hover:shadow-lg transition-shadow">
               <CardHeader>
