@@ -4,41 +4,28 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  Button,
-  Stack,
-  Divider,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  FlightTakeoff as FlightTakeoffIcon,
-  Check as CheckIcon,
-  Stop as StopIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
+  ArrowLeft,
+  PlaneTakeoff,
+  Check,
+  Square,
+  RefreshCw,
+  X
+} from 'lucide-react';
 import { getFlightPlans } from '@/lib/flightPlanStorage';
 import { StoredFlightPlan } from '@/types/flightPlan';
 import * as turf from '@turf/turf';
 import { Units } from '@turf/helpers';
 import airportList from '@/data/airport-list.json';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 interface Position {
   lat: number;
   lon: number;
   altitude: number;
   timestamp: number;
-}
-
-interface FlightUpdate {
-  id: string;
-  position: Position;
-  completed: boolean;
 }
 
 interface ActiveFlight extends StoredFlightPlan {
@@ -54,9 +41,9 @@ const FLIGHT_ACTIVATIONS_KEY = 'flightActivations';
 const RadarScope = dynamic(() => import('@/components/RadarScope'), {
   ssr: false,
   loading: () => (
-    <Box sx={{ height: 800, bgcolor: '#001a00', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Typography sx={{ color: '#00ff00' }}>Initializing radar...</Typography>
-    </Box>
+    <div className="h-[800px] bg-black flex items-center justify-center">
+      <p className="text-green-500">Initializing radar...</p>
+    </div>
   ),
 });
 
@@ -289,159 +276,183 @@ export default function OperationsPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100', py: 4 }}>
-      <Container maxWidth="xl">
+    <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background grid */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Grid lines resembling radar */}
+        <div className="absolute inset-0 grid grid-cols-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`vline-${i}`} className="h-full w-px bg-blue-300"></div>
+          ))}
+        </div>
+        <div className="absolute inset-0 grid grid-rows-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`hline-${i}`} className="w-full h-px bg-blue-300"></div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Back to Home Link and Time */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              sx={{ color: 'text.secondary' }}
-            >
+        <div className="mb-6 flex justify-between items-center">
+          <Button variant="ghost" asChild className="text-muted-foreground">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
-            </Button>
-          </Link>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontFamily: 'monospace',
-              color: 'text.secondary',
-              fontWeight: 'medium'
-            }}
-          >
+            </Link>
+          </Button>
+          <div className="font-mono text-xl text-muted-foreground font-medium">
             {currentTime.toISOString().slice(11, 19)}Z
-          </Typography>
-        </Box>
+          </div>
+        </div>
 
         {/* Main Content Grid */}
-        <Box sx={{ display: 'flex', gap: 3 }}>
+        <div className="flex gap-4">
           {/* Left Side - Flight Strips */}
-          <Paper elevation={3} sx={{ p: 4, borderRadius: 2, flex: '0 0 400px' }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FlightTakeoffIcon sx={{ fontSize: 32 }} />
-                Flight Operations
-              </Typography>
-              <Button
-                startIcon={<RefreshIcon />}
-                onClick={loadFlightPlans}
-                sx={{ color: 'text.secondary' }}
-              >
-                Refresh
-              </Button>
-            </Box>
+          <div className="flex-shrink-0 w-[400px]">
+            <Card className="bg-card shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between px-6 pb-2">
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <PlaneTakeoff className="h-6 w-6" />
+                  Flight Operations
+                </CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={loadFlightPlans}
+                  className="text-muted-foreground"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </CardHeader>
+              
+              <CardContent className="px-6 pb-6">
+                {/* Last Refresh Time */}
+                <p className="text-sm text-muted-foreground mb-4">
+                  Last refreshed: {lastRefresh.toLocaleTimeString()}
+                </p>
 
-            {/* Last Refresh Time */}
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Last refreshed: {lastRefresh.toLocaleTimeString()}
-            </Typography>
+                {/* Flight Strips */}
+                <div className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
+                  {activeFlights.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      No active flight plans
+                    </div>
+                  ) : (
+                    activeFlights.map((flight) => (
+                      <Card 
+                        key={flight.id} 
+                        className={`
+                          border-l-4 
+                          ${flight.completed ? 'border-l-green-500 bg-green-50 dark:bg-green-950/20' : 
+                            flight.position ? 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20' : 
+                            'border-l-zinc-500'}
+                        `}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div className="flex flex-col gap-3">
+                              {/* Aircraft and Route */}
+                              <div className="flex gap-4">
+                                <div>
+                                  <p className="text-lg font-mono font-medium">
+                                    {flight.aircraft?.id || 'N/A'}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {flight.departure?.id || '????'} → {flight.destination?.id || '????'}
+                                  </p>
+                                </div>
 
-            {/* Flight Strips */}
-            <Stack spacing={2} sx={{ maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' }}>
-              {activeFlights.length === 0 ? (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No active flight plans
-                </Typography>
-              ) : (
-                activeFlights.map((flight) => (
-                  <Paper
-                    key={flight.id}
-                    elevation={1}
-                    sx={{
-                      p: 2,
-                      bgcolor: flight.completed ? 'success.light' : flight.position ? 'info.light' : 'background.paper',
-                      borderLeft: 6,
-                      borderColor: flight.completed ? 'success.main' : flight.position ? 'info.main' : 'primary.main',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', gap: 4 }}>
-                        {/* Aircraft and Route */}
-                        <Box>
-                          <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
-                            {flight.aircraft?.id || 'N/A'}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {flight.departure?.id || '????'} → {flight.destination?.id || '????'}
-                          </Typography>
-                        </Box>
+                                <div>
+                                  <p className="font-mono">
+                                    FL{flight.altitude} {flight.speed}kt
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    ETD: {formatTime(flight.etdTime)} {flight.etdDate}
+                                  </p>
+                                </div>
+                              </div>
 
-                        {/* Flight Details */}
-                        <Box>
-                          <Typography sx={{ fontFamily: 'monospace' }}>
-                            FL{flight.altitude} {flight.speed}kt
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            ETD: {formatTime(flight.etdTime)} {flight.etdDate}
-                          </Typography>
-                        </Box>
+                              {/* Position information */}
+                              <div className="w-full">
+                                <p className="font-mono text-sm">
+                                  {formatPosition(flight.position)}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {flight.completed ? 'COMPLETED' : flight.position ? 'IN PROGRESS' : 'SCHEDULED'}
+                                </p>
+                              </div>
+                            </div>
 
-                        {/* Position */}
-                        <Box sx={{ minWidth: 300 }}>
-                          <Typography sx={{ fontFamily: 'monospace' }}>
-                            {formatPosition(flight.position)}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {flight.completed ? 'COMPLETED' : flight.position ? 'IN PROGRESS' : 'SCHEDULED'}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      {/* Actions */}
-                      <Stack direction="row" spacing={1}>
-                        {!flight.position && !flight.completed && (
-                          <Tooltip title="Start Flight">
-                            <IconButton
-                              color="success"
-                              onClick={() => activateFlight(flight.id)}
-                            >
-                              <CheckIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {flight.position && !flight.completed && (
-                          <Tooltip title="Stop Flight">
-                            <IconButton
-                              color="error"
-                              onClick={() => deactivateFlight(flight.id)}
-                            >
-                              <StopIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {flight.completed && (
-                          <Tooltip title="Close Flight">
-                            <IconButton
-                              color="info"
-                              onClick={() => closeFlight(flight.id)}
-                            >
-                              <CloseIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
-                    </Box>
-                  </Paper>
-                ))
-              )}
-            </Stack>
-          </Paper>
+                            {/* Actions */}
+                            <div className="flex space-x-1">
+                              <TooltipProvider>
+                                {!flight.position && !flight.completed && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => activateFlight(flight.id)}
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                                      >
+                                        <Check className="h-5 w-5" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Start Flight</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {flight.position && !flight.completed && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => deactivateFlight(flight.id)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                      >
+                                        <Square className="h-5 w-5" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Stop Flight</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {flight.completed && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => closeFlight(flight.id)}
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                      >
+                                        <X className="h-5 w-5" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Close Flight</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Right Side - Radar Scope */}
-          <Paper elevation={3} sx={{ 
-            p: 2, 
-            borderRadius: 2, 
-            bgcolor: '#000000',
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <RadarScope activeFlights={activeFlights} width={800} height={800} />
-          </Paper>
-        </Box>
-      </Container>
-    </Box>
+          <Card className="flex-1 p-2 bg-black border-background">
+            <CardContent className="p-0 flex items-center justify-center">
+              <RadarScope activeFlights={activeFlights} width={800} height={800} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </main>
   );
-} 
+}

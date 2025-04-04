@@ -1,55 +1,23 @@
 'use client';
 
-import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tabs,
-  Tab,
-  Link as MuiLink,
-} from '@mui/material';
-import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import aircraftTypes from '@/data/aircraft-types.json';
-import airportList from '@/data/airport-list.json';
 import airports from '@/data/airports.json';
 import obstructions from '@/data/obstructions.json';
 import terrain from '@/data/terrain.json';
 import runways from '@/data/runways.json';
 import coastline from '@/data/coastline.json';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, PlaneTakeoff } from "lucide-react";
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`tabpanel-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
+// Using shadcn/ui TabsContent directly instead of a custom wrapper
 
 function CoastlineVisualization() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -152,38 +120,84 @@ function CoastlineVisualization() {
       ref={canvasRef}
       width={width}
       height={height}
-      style={{
-        width: width,
-        height: height,
-        backgroundColor: '#f3f4f6',
-        borderRadius: '8px',
-        marginBottom: '20px'
-      }}
+      className="w-[400px] h-[300px] bg-gray-100 dark:bg-gray-800 rounded-lg mb-5"
     />
   );
 }
 
 function TerrainVisualization() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const width = 400;
-  const height = 300;
+  const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
+  const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
   
   useEffect(() => {
     if (!containerRef.current) return;
-
+    
+    // Get container dimensions
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        setDimensions({
+          width: containerWidth - 20, // account for padding
+          height: Math.min(500, containerWidth * 0.5), // responsive height
+        });
+      }
+    };
+    
+    // Initial dimensions calculation
+    updateDimensions();
+    
+    // Capture the current container reference
+    const container = containerRef.current;
+    
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000033);
     
     // Camera setup
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, dimensions.width / dimensions.height, 0.1, 1000);
     camera.position.set(5, 5, 5);
     camera.lookAt(0, 0, 0);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
-    containerRef.current.appendChild(renderer.domElement);
+    renderer.setSize(dimensions.width, dimensions.height);
+    container.appendChild(renderer.domElement);
+
+    // Add OrbitControls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.8;
+    controls.maxDistance = 20;
+    controls.minDistance = 2;
+    controls.autoRotate = isAutoRotating;
+    controls.autoRotateSpeed = 1.0;
+
+    // Display a help message on hover
+    const helpText = document.createElement('div');
+    helpText.style.position = 'absolute';
+    helpText.style.bottom = '10px';
+    helpText.style.left = '10px';
+    helpText.style.color = 'white';
+    helpText.style.fontSize = '12px';
+    helpText.style.pointerEvents = 'none';
+    helpText.style.userSelect = 'none';
+    helpText.style.padding = '4px 8px';
+    helpText.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    helpText.style.borderRadius = '4px';
+    helpText.innerHTML = 'Left click: rotate | Right click: pan | Scroll: zoom';
+    helpText.style.opacity = '0';
+    helpText.style.transition = 'opacity 0.3s';
+    container.appendChild(helpText);
+    
+    container.addEventListener('mouseenter', () => {
+      helpText.style.opacity = '1';
+    });
+    
+    container.addEventListener('mouseleave', () => {
+      helpText.style.opacity = '0';
+    });
 
     // Grid helper
     const gridHelper = new THREE.GridHelper(10, 10, 0x00ff00, 0x00ff00);
@@ -242,304 +256,371 @@ function TerrainVisualization() {
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
+    // Add axes helper (x=red, y=green, z=blue)
+    const axesHelper = new THREE.AxesHelper(3);
+    scene.add(axesHelper);
+
+    // Add a subtle point light at origin for extra glow effect
+    const pointLight = new THREE.PointLight(0x00ffff, 0.6, 10);
+    pointLight.position.set(0, 0, 0);
+    scene.add(pointLight);
+
     // Animation
     let frame = 0;
     const animate = () => {
       frame += 0.005;
       
-      // Rotate camera around the scene
-      camera.position.x = Math.cos(frame) * 7;
-      camera.position.z = Math.sin(frame) * 7;
-      camera.position.y = 5 + Math.sin(frame * 0.5) * 2;
-      camera.lookAt(0, 0, 0);
-
       // Pulse the point sizes
       material.size = 0.2 + Math.sin(frame * 2) * 0.05;
-
+      
+      // Pulse the point light intensity
+      pointLight.intensity = 0.6 + Math.sin(frame) * 0.2;
+      
+      // Update controls
+      controls.update();
+      
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
     };
     animate();
 
-    // Add glow post-processing
-    const composer = new THREE.WebGLRenderer({ antialias: true });
-    composer.setSize(width, height);
-
-    return () => {
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+    // Handle window resize
+    const handleResize = () => {
+      updateDimensions();
+      
+      if (container) {
+        camera.aspect = dimensions.width / dimensions.height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(dimensions.width, dimensions.height);
       }
     };
-  }, []);
+    
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      if (container) {
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isAutoRotating, dimensions.width, dimensions.height]);
 
   return (
-    <Box 
-      ref={containerRef} 
-      sx={{ 
-        width: width, 
-        height: height, 
-        backgroundColor: '#000033',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        marginBottom: '20px',
-        boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)',
-        border: '1px solid rgba(0, 255, 255, 0.1)'
-      }} 
-    />
+    <div className="relative">
+      <div 
+        ref={containerRef} 
+        className="w-full h-[400px] bg-[#000033] rounded-lg overflow-hidden shadow-[0_0_20px_rgba(0,255,255,0.2)] border border-[rgba(0,255,255,0.1)]" 
+      />
+      <div className="flex justify-end mt-3">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8"
+          onClick={() => setIsAutoRotating(prev => !prev)}
+        >
+          {isAutoRotating ? "Stop Auto-Rotation" : "Enable Auto-Rotation"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
 export default function DataViewerPage() {
-  const [currentTab, setCurrentTab] = useState(0);
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setCurrentTab(newValue);
-  };
+  const [currentTab, setCurrentTab] = useState("aircraft");
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100', py: 4 }}>
-      <Container maxWidth="xl">
+    <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background grid */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Grid lines resembling radar */}
+        <div className="absolute inset-0 grid grid-cols-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`vline-${i}`} className="h-full w-px bg-blue-300"></div>
+          ))}
+        </div>
+        <div className="absolute inset-0 grid grid-rows-12 gap-4 opacity-10">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={`hline-${i}`} className="w-full h-px bg-blue-300"></div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <MuiLink component="button" variant="body1" sx={{ color: 'text.secondary' }}>
-              ← Back to Home
-            </MuiLink>
-          </Link>
-          <Typography variant="h4" component="h1">
-            Data Viewer
-          </Typography>
-          <Box sx={{ width: 100 }} /> {/* Spacer for alignment */}
-        </Box>
+        <div className="mb-8 flex justify-between items-center">
+          <Button variant="ghost" asChild className="text-muted-foreground">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+          <div className="w-[100px]" /> {/* Spacer for alignment */}
+        </div>
 
         {/* Main Content */}
-        <Paper elevation={3} sx={{ borderRadius: 2 }}>
-          <Tabs value={currentTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab label="Aircraft Types" />
-            <Tab label="Airports" />
-            <Tab label="Airport List" />
-            <Tab label="Obstructions" />
-            <Tab label="Terrain" />
-            <Tab label="Runways" />
-            <Tab label="Coastlines" />
-          </Tabs>
+        <Card className="bg-card shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between px-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <PlaneTakeoff className="h-6 w-6" />
+              Data Viewer
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Tabs defaultValue="aircraft" value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                <TabsList className="w-full justify-start rounded-none bg-transparent px-4">
+                  <TabsTrigger value="aircraft">Aircraft Types</TabsTrigger>
+                  <TabsTrigger value="airports">Airports</TabsTrigger>
+                  <TabsTrigger value="airportList">Airport List</TabsTrigger>
+                  <TabsTrigger value="obstructions">Obstructions</TabsTrigger>
+                  <TabsTrigger value="terrain">Terrain</TabsTrigger>
+                  <TabsTrigger value="runways">Runways</TabsTrigger>
+                  <TabsTrigger value="coastlines">Coastlines</TabsTrigger>
+                </TabsList>
 
-          {/* Aircraft Types */}
-          <TabPanel value={currentTab} index={0}>
-            <Typography variant="h6" gutterBottom>Aircraft Types</Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell align="right">Cruise Speed (kt)</TableCell>
-                    <TableCell align="right">Fuel Burn (gal/hr)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {aircraftTypes.types.map((aircraft) => (
-                    <TableRow key={aircraft.id}>
-                      <TableCell>{aircraft.id}</TableCell>
-                      <TableCell>{aircraft.label}</TableCell>
-                      <TableCell align="right">{aircraft.cruiseSpeed}</TableCell>
-                      <TableCell align="right">{aircraft.fuelBurn.toFixed(1)}</TableCell>
+              {/* Aircraft Types */}
+              <TabsContent value="aircraft" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Aircraft Types</h2>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Cruise Speed (kt)</TableHead>
+                      <TableHead className="text-right">Fuel Burn (gal/hr)</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-
-          {/* Airports */}
-          <TabPanel value={currentTab} index={1}>
-            <Typography variant="h6" gutterBottom>Airports</Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell align="right">Latitude</TableCell>
-                    <TableCell align="right">Longitude</TableCell>
-                    <TableCell>Runways</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Object.entries(airports).map(([id, data]) => (
-                    <TableRow key={id}>
-                      <TableCell>{id}</TableCell>
-                      <TableCell align="right">{data.coordinates.lat.toFixed(4)}</TableCell>
-                      <TableCell align="right">{data.coordinates.lon.toFixed(4)}</TableCell>
-                      <TableCell>
-                        {data.runways.map(rw => `${rw.id} (${rw.heading}°)`).join(', ')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-
-          {/* Airport List */}
-          <TabPanel value={currentTab} index={2}>
-            <Typography variant="h6" gutterBottom>Airport List</Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell align="right">Elevation (ft)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Object.entries(terrain.airports).map(([id, data]) => (
-                    <TableRow key={id}>
-                      <TableCell>{id}</TableCell>
-                      <TableCell>{data.name}</TableCell>
-                      <TableCell align="right">{data.elevation}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-
-          {/* Obstructions */}
-          <TabPanel value={currentTab} index={3}>
-            <Typography variant="h6" gutterBottom>Obstructions</Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="right">Latitude</TableCell>
-                    <TableCell align="right">Longitude</TableCell>
-                    <TableCell align="right">Height (ft)</TableCell>
-                    <TableCell align="right">Elevation (ft)</TableCell>
-                    <TableCell>Lighting</TableCell>
-                    <TableCell>Description</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {obstructions.obstructions.map((obstruction, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{obstruction.type}</TableCell>
-                      <TableCell align="right">{obstruction.lat.toFixed(4)}</TableCell>
-                      <TableCell align="right">{obstruction.lon.toFixed(4)}</TableCell>
-                      <TableCell align="right">{obstruction.height}</TableCell>
-                      <TableCell align="right">{obstruction.elevation}</TableCell>
-                      <TableCell>{obstruction.lighting}</TableCell>
-                      <TableCell>{obstruction.description}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-
-          {/* Terrain */}
-          <TabPanel value={currentTab} index={4}>
-            <Typography variant="h6" gutterBottom>Terrain Grid Points</Typography>
-            <Box sx={{ display: 'flex', gap: 4, mb: 3 }}>
-              <Box sx={{ flex: '0 0 400px' }}>
-                <TerrainVisualization />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell align="right">Latitude</TableCell>
-                        <TableCell align="right">Longitude</TableCell>
-                        <TableCell align="right">Elevation (ft)</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {aircraftTypes.types.map((aircraft) => (
+                      <TableRow key={aircraft.id}>
+                        <TableCell className="font-mono">{aircraft.id}</TableCell>
+                        <TableCell>{aircraft.label}</TableCell>
+                        <TableCell className="text-right">{aircraft.cruiseSpeed}</TableCell>
+                        <TableCell className="text-right">{aircraft.fuelBurn.toFixed(1)}</TableCell>
                       </TableRow>
-                    </TableHead>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              {/* Airports */}
+              <TabsContent value="airports" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Airports</h2>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead className="text-right">Latitude</TableHead>
+                      <TableHead className="text-right">Longitude</TableHead>
+                      <TableHead>Runways</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(airports).map(([id, data]) => (
+                      <TableRow key={id}>
+                        <TableCell className="font-mono">{id}</TableCell>
+                        <TableCell className="text-right">{data.coordinates.lat.toFixed(4)}</TableCell>
+                        <TableCell className="text-right">{data.coordinates.lon.toFixed(4)}</TableCell>
+                        <TableCell>
+                          {data.runways.map(rw => `${rw.id} (${rw.heading}°)`).join(', ')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              {/* Airport List */}
+              <TabsContent value="airportList" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Airport List</h2>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="text-right">Elevation (ft)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(terrain.airports).map(([id, data]) => (
+                      <TableRow key={id}>
+                        <TableCell className="font-mono">{id}</TableCell>
+                        <TableCell>{data.name}</TableCell>
+                        <TableCell className="text-right">{data.elevation}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              {/* Obstructions */}
+              <TabsContent value="obstructions" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Obstructions</h2>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Latitude</TableHead>
+                        <TableHead className="text-right">Longitude</TableHead>
+                        <TableHead className="text-right">Height (ft)</TableHead>
+                        <TableHead className="text-right">Elevation (ft)</TableHead>
+                        <TableHead>Lighting</TableHead>
+                        <TableHead>Description</TableHead>
+                      </TableRow>
+                    </TableHeader>
                     <TableBody>
-                      {terrain.terrain_grid.map((point, index) => (
+                      {obstructions.obstructions.map((obstruction, index) => (
                         <TableRow key={index}>
-                          <TableCell align="right">{point.lat.toFixed(4)}</TableCell>
-                          <TableCell align="right">{point.lon.toFixed(4)}</TableCell>
-                          <TableCell align="right">{point.elevation}</TableCell>
+                          <TableCell>{obstruction.type}</TableCell>
+                          <TableCell className="text-right">{obstruction.lat.toFixed(4)}</TableCell>
+                          <TableCell className="text-right">{obstruction.lon.toFixed(4)}</TableCell>
+                          <TableCell className="text-right">{obstruction.height}</TableCell>
+                          <TableCell className="text-right">{obstruction.elevation}</TableCell>
+                          <TableCell>{obstruction.lighting}</TableCell>
+                          <TableCell>{obstruction.description}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </TableContainer>
-              </Box>
-            </Box>
-          </TabPanel>
+                </div>
+              </TabsContent>
 
-          {/* Runways */}
-          <TabPanel value={currentTab} index={5}>
-            <Typography variant="h6" gutterBottom>Runways</Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Airport</TableCell>
-                    <TableCell>Runway</TableCell>
-                    <TableCell align="right">Length (ft)</TableCell>
-                    <TableCell align="right">Width (ft)</TableCell>
-                    <TableCell align="right">Heading</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Object.entries(runways).map(([airport, data]) => (
-                    data.runways.map((runway) => (
-                      <TableRow key={`${airport}-${runway.id}`}>
-                        <TableCell>{airport}</TableCell>
-                        <TableCell>{runway.id}</TableCell>
-                        <TableCell align="right">{runway.length}</TableCell>
-                        <TableCell align="right">{runway.width}</TableCell>
-                        <TableCell align="right">{runway.heading}°</TableCell>
-                      </TableRow>
-                    ))
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
+              {/* Terrain */}
+              <TabsContent value="terrain" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">3D Interactive Terrain Model</h2>
+                <div className="grid grid-cols-1 gap-6 mb-4">
+                  <div className="bg-black/10 p-4 rounded-lg">
+                    <div className="text-sm font-medium mb-3">Terrain Point Cloud</div>
+                    <TerrainVisualization />
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="overflow-auto">
+                      <h3 className="text-lg font-medium mb-3">Terrain Grid Points</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">Latitude</TableHead>
+                            <TableHead className="text-right">Longitude</TableHead>
+                            <TableHead className="text-right">Elevation (ft)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {terrain.terrain_grid.slice(0, 15).map((point, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="text-right">{point.lat.toFixed(4)}</TableCell>
+                              <TableCell className="text-right">{point.lon.toFixed(4)}</TableCell>
+                              <TableCell className="text-right">{point.elevation}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {terrain.terrain_grid.length > 15 && (
+                        <p className="text-center text-muted-foreground text-sm mt-2">
+                          (Showing 15 of {terrain.terrain_grid.length} terrain points)
+                        </p>
+                      )}
+                    </div>
+                    <div className="overflow-auto">
+                      <h3 className="text-lg font-medium mb-3">Terrain Statistics</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Elevation Range</div>
+                          <div className="font-mono text-lg">
+                            {Math.min(...terrain.terrain_grid.map(p => p.elevation))}ft - {Math.max(...terrain.terrain_grid.map(p => p.elevation))}ft
+                          </div>
+                        </div>
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Data Points</div>
+                          <div className="font-mono text-lg">{terrain.terrain_grid.length}</div>
+                        </div>
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Area Coverage</div>
+                          <div className="font-mono text-lg">
+                            {(Math.max(...terrain.terrain_grid.map(p => p.lat)) - Math.min(...terrain.terrain_grid.map(p => p.lat))).toFixed(2)}° x {(Math.max(...terrain.terrain_grid.map(p => p.lon)) - Math.min(...terrain.terrain_grid.map(p => p.lon))).toFixed(2)}°
+                          </div>
+                        </div>
+                        <div className="bg-black/5 p-3 rounded-lg">
+                          <div className="text-sm text-muted-foreground">Highest Point</div>
+                          <div className="font-mono text-lg">
+                            {Math.max(...terrain.terrain_grid.map(p => p.elevation))}ft
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
 
-          {/* Coastlines */}
-          <TabPanel value={currentTab} index={6}>
-            <Typography variant="h6" gutterBottom>Coastlines</Typography>
-            <Box sx={{ display: 'flex', gap: 4, mb: 3 }}>
-              <Box sx={{ flex: '0 0 400px' }}>
-                <CoastlineVisualization />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Points</TableCell>
-                        <TableCell align="right">Start Coordinates</TableCell>
-                        <TableCell align="right">End Coordinates</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {coastline.features.map((feature, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{feature.properties.name}</TableCell>
-                          <TableCell>{feature.geometry.coordinates.length} points</TableCell>
-                          <TableCell align="right">
-                            {feature.geometry.coordinates[0][1].toFixed(4)}°N, {Math.abs(feature.geometry.coordinates[0][0]).toFixed(4)}°W
-                          </TableCell>
-                          <TableCell align="right">
-                            {feature.geometry.coordinates[feature.geometry.coordinates.length - 1][1].toFixed(4)}°N, {Math.abs(feature.geometry.coordinates[feature.geometry.coordinates.length - 1][0]).toFixed(4)}°W
-                          </TableCell>
+              {/* Runways */}
+              <TabsContent value="runways" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Runways</h2>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Airport</TableHead>
+                      <TableHead>Runway</TableHead>
+                      <TableHead className="text-right">Length (ft)</TableHead>
+                      <TableHead className="text-right">Width (ft)</TableHead>
+                      <TableHead className="text-right">Heading</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(runways).map(([airport, data]) => (
+                      data.runways.map((runway) => (
+                        <TableRow key={`${airport}-${runway.id}`}>
+                          <TableCell className="font-mono">{airport}</TableCell>
+                          <TableCell>{runway.id}</TableCell>
+                          <TableCell className="text-right">{runway.length}</TableCell>
+                          <TableCell className="text-right">{runway.width}</TableCell>
+                          <TableCell className="text-right">{runway.heading}°</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            </Box>
-          </TabPanel>
-        </Paper>
-      </Container>
-    </Box>
+                      ))
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              {/* Coastlines */}
+              <TabsContent value="coastlines" className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Coastlines</h2>
+                <div className="flex flex-col lg:flex-row gap-6 mb-4">
+                  <div className="flex-shrink-0">
+                    <CoastlineVisualization />
+                  </div>
+                  <div className="flex-grow overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Points</TableHead>
+                          <TableHead className="text-right">Start Coordinates</TableHead>
+                          <TableHead className="text-right">End Coordinates</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {coastline.features.map((feature, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{feature.properties.name}</TableCell>
+                            <TableCell>{feature.geometry.coordinates.length} points</TableCell>
+                            <TableCell className="text-right">
+                              {feature.geometry.coordinates[0][1].toFixed(4)}°N, {Math.abs(feature.geometry.coordinates[0][0]).toFixed(4)}°W
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {feature.geometry.coordinates[feature.geometry.coordinates.length - 1][1].toFixed(4)}°N, {Math.abs(feature.geometry.coordinates[feature.geometry.coordinates.length - 1][0]).toFixed(4)}°W
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
-} 
+}
